@@ -1,10 +1,21 @@
 language: csharp
 solution: SharpStar.sln
 mono:
-  - latest
+- latest
 script:
-  - xbuild /p:Configuration=Release SharpStar.Mono.sln
+- xbuild /p:Configuration=Release SharpStar.Mono.sln
 after_script:
-  - mv Lib/* SharpStar/bin/Release
-  - mono SharpStar/bin/Release/MkBundleHelper.exe SharpStar/bin/Release/ SharpStar.exe
-  - bash SharpStar/bin/Release/mkbundle.txt
+- mv Lib/* SharpStar/bin/Release
+- mono SharpStar/bin/Release/MkBundleHelper.exe SharpStar/bin/Release/ SharpStar.exe
+- bash SharpStar/bin/Release/mkbundle.txt
+deploy:
+  provider: s3
+  access_key_id: AKIAIZ43C6YADAB5SSZA
+  secret_access_key:
+    secure: HFfgyVBi6oNSiT9JN4nJUm2HHOSpbjiEQPRbO+UNzKjS0Wfwd9vXHHprNvdutHtJBJgj4wPytUupE0//VukUdGeAmzpTRJbk3p6lCgK8MZqAn73PUZ87KOF6Trl7W9bdlj+oVNgBVwXxwmHY0vkvppTdwAdrXrtLRBkWMOGjXsg=
+  bucket: starbound-star
+  local-dir: SharpStar/bin/Release
+  upload-dir: linux
+  acl: public_read
+  on:
+    repo: SharpStar/Star
