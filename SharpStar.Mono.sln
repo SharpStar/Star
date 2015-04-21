@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StarLib.Mono", "StarLib\StarLib.Mono.csproj", "{5D065B2B-F45F-4E8F-AAB4-A409C22E4DD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpStar.Mono", "SharpStar\SharpStar.Mono.csproj", "{BEFF475E-8A87-4409-B9F6-7C6F07DB0DA5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5D065B2B-F45F-4E8F-AAB4-A409C22E4DD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D065B2B-F45F-4E8F-AAB4-A409C22E4DD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D065B2B-F45F-4E8F-AAB4-A409C22E4DD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D065B2B-F45F-4E8F-AAB4-A409C22E4DD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BEFF475E-8A87-4409-B9F6-7C6F07DB0DA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEFF475E-8A87-4409-B9F6-7C6F07DB0DA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEFF475E-8A87-4409-B9F6-7C6F07DB0DA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEFF475E-8A87-4409-B9F6-7C6F07DB0DA5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

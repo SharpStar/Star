@@ -1,0 +1,10 @@
+language: csharp
+solution: SharpStar.sln
+mono:
+  - latest
+script:
+  - xbuild /p:Configuration=Release SharpStar.Mono.sln
+after_script:
+  - mv Lib/* SharpStar/bin/Release
+  - mono SharpStar/bin/Release/MkBundleHelper.exe SharpStar/bin/Release/ SharpStar.exe
+  - bash SharpStar/bin/Release/mkbundle.txt

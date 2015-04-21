@@ -1,0 +1,296 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5D065B2B-F45F-4E8F-AAB4-A409C22E4DD6}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>StarLib</RootNamespace>
+    <AssemblyName>StarLib</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <NuGetPackageImportStamp>5e23edf1</NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.86.0.518, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpZipLib.0.86.0\lib\20\ICSharpCode.SharpZipLib.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="log4net, Version=1.2.13.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
+      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Mono.Addins, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <HintPath>..\packages\Mono.Addins.1.2.0\lib\net40\Mono.Addins.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Mono.Addins.Setup, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <HintPath>..\packages\Mono.Addins.Setup.1.2.0\lib\net40\Mono.Addins.Setup.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Mono.Data.Sqlite, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <HintPath>..\packages\ServiceStack.OrmLite.Sqlite.Mono.4.0.38\lib\net45\Mono.Data.Sqlite.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ServiceStack.Common, Version=4.0.38.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ServiceStack.Common.4.0.38\lib\net40\ServiceStack.Common.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ServiceStack.Interfaces, Version=4.0.0.0, Culture=neutral, PublicKeyToken=e06fbc6124f57c43, processorArchitecture=MSIL">
+      <HintPath>..\packages\ServiceStack.Interfaces.4.0.38\lib\portable-wp80+sl5+net40+win8+monotouch+monoandroid\ServiceStack.Interfaces.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ServiceStack.OrmLite, Version=4.0.38.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ServiceStack.OrmLite.4.0.38\lib\net45\ServiceStack.OrmLite.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ServiceStack.OrmLite.Sqlite, Version=4.0.38.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ServiceStack.OrmLite.Sqlite.Mono.4.0.38\lib\net45\ServiceStack.OrmLite.Sqlite.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ServiceStack.Text, Version=4.0.38.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\ServiceStack.Text.4.0.38\lib\net40\ServiceStack.Text.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Zlib.Portable, Version=1.10.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Zlib.Portable.1.10.0\lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\Zlib.Portable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Commands\Command.cs" />
+    <Compile Include="Commands\CommandError.cs" />
+    <Compile Include="Commands\CommandExecutorPart.cs" />
+    <Compile Include="Commands\CommandManager.cs" />
+    <Compile Include="Commands\CommandPart.cs" />
+    <Compile Include="Commands\CommandParts.cs" />
+    <Compile Include="Commands\CommandPlaceHolder.cs" />
+    <Compile Include="Commands\CommandStaticText.cs" />
+    <Compile Include="Commands\CommandTextBase.cs" />
+    <Compile Include="Commands\Console\ConsoleCommand.cs" />
+    <Compile Include="Commands\Console\ConsoleCommandExecutorPart.cs" />
+    <Compile Include="Commands\Console\ConsoleCommandManager.cs" />
+    <Compile Include="Commands\Console\ConsoleCommandParts.cs" />
+    <Compile Include="Commands\ICommand.cs" />
+    <Compile Include="Commands\ParsedCommand.cs" />
+    <Compile Include="Commands\PlayerEvent\ParsedPlayerEventCommand.cs" />
+    <Compile Include="Commands\PlayerEvent\PermissionDeniedException.cs" />
+    <Compile Include="Commands\PlayerEvent\PlayerEventCommand.cs" />
+    <Compile Include="Commands\PlayerEvent\PlayerEventCommandManager.cs" />
+    <Compile Include="Commands\PlayerEvent\PlayerEventCommandParts.cs" />
+    <Compile Include="Configuration\IConfiguration.cs" />
+    <Compile Include="Configuration\JsonFileConfiguration.cs" />
+    <Compile Include="Configuration\ServerConfiguration.cs" />
+    <Compile Include="Configuration\StarConfiguration.cs" />
+    <Compile Include="Database\Models\Account.cs" />
+    <Compile Include="Database\Models\Ban.cs" />
+    <Compile Include="Database\Models\Character.cs" />
+    <Compile Include="Database\Models\Group.cs" />
+    <Compile Include="Database\Models\Permission.cs" />
+    <Compile Include="Database\SqliteDb.cs" />
+    <Compile Include="Database\StarDb.cs" />
+    <Compile Include="DataTypes\Variant\IVariant.cs" />
+    <Compile Include="DataTypes\Variant\StarVariant.cs" />
+    <Compile Include="DataTypes\Variant\VariantDictionary.cs" />
+    <Compile Include="DataTypes\Variant\VariantPair.cs" />
+    <Compile Include="DataTypes\Variant\VariantValue.cs" />
+    <Compile Include="DataTypes\Vec2F.cs" />
+    <Compile Include="DataTypes\Vec2I.cs" />
+    <Compile Include="DataTypes\Vec3I.cs" />
+    <Compile Include="DataTypes\VLQ.cs" />
+    <Compile Include="Events\Packets\PacketEventKey.cs" />
+    <Compile Include="Events\Packets\PacketEventType.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Mono\DataConverter.cs" />
+    <Compile Include="Packets\Either.cs" />
+    <Compile Include="Packets\Maybe.cs" />
+    <Compile Include="Packets\Starbound\BurnContainerPacket.cs" />
+    <Compile Include="Packets\Starbound\CallScriptedEntityPacket.cs" />
+    <Compile Include="Packets\Starbound\CelestialRequestPacket.cs" />
+    <Compile Include="Packets\Starbound\CentralStructureUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\ChatSendPacket.cs" />
+    <Compile Include="Packets\Starbound\ClearContainerPacket.cs" />
+    <Compile Include="Packets\Starbound\ClientContextUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\CloseContainerPacket.cs" />
+    <Compile Include="Packets\Starbound\CollectLiquidPacket.cs" />
+    <Compile Include="Packets\Starbound\ConnectWirePacket.cs" />
+    <Compile Include="Packets\Starbound\DamageNotificationPacket.cs" />
+    <Compile Include="Packets\Starbound\DamageRequestPacket.cs" />
+    <Compile Include="Packets\Starbound\DisconnectAllWiresPacket.cs" />
+    <Compile Include="Packets\Starbound\EntityCreatePacket.cs" />
+    <Compile Include="Packets\Starbound\EntityDestroyPacket.cs" />
+    <Compile Include="Packets\Starbound\EntityInteractPacket.cs" />
+    <Compile Include="Packets\Starbound\EntityInteractResultPacket.cs" />
+    <Compile Include="Packets\Starbound\EntityUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\EnvironmentUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\FlyShipPacket.cs" />
+    <Compile Include="Packets\Starbound\GiveItemPacket.cs" />
+    <Compile Include="Packets\Starbound\HitRequestPacket.cs" />
+    <Compile Include="Packets\Starbound\ItemApplyInContainerPacket.cs" />
+    <Compile Include="Packets\Starbound\OpenContainerPacket.cs" />
+    <Compile Include="Packets\Starbound\PlayerWarpPacket.cs" />
+    <Compile Include="Extensions\PlayerExtensions.cs" />
+    <Compile Include="Localization\LocalizationFile.cs" />
+    <Compile Include="Localization\SimpleLocalizationFile.cs" />
+    <Compile Include="Packets\Any.cs" />
+    <Compile Include="Packets\Serialization\Attributes\StarSerializeCondition.cs" />
+    <Compile Include="Packets\Starbound\ClientDisconnectRequestPacket.cs" />
+    <Compile Include="Packets\Starbound\ConnectFailurePacket.cs" />
+    <Compile Include="Packets\Starbound\ConnectSucessPacket.cs" />
+    <Compile Include="Packets\Starbound\HandshakeChallengePacket.cs" />
+    <Compile Include="Packets\Starbound\HandshakeResponsePacket.cs" />
+    <Compile Include="Packets\Starbound\PlayerWarpResultPacket.cs" />
+    <Compile Include="Packets\Starbound\RequestDropPacket.cs" />
+    <Compile Include="Packets\Starbound\ServerDisconnectPacket.cs" />
+    <Compile Include="Packets\Starbound\SpawnEntityPacket.cs" />
+    <Compile Include="Packets\Starbound\StartCraftingInContainerPacket.cs" />
+    <Compile Include="Packets\Starbound\StopCraftingInContainerPacket.cs" />
+    <Compile Include="Packets\Starbound\SwapInContainerPacket.cs" />
+    <Compile Include="Packets\Starbound\SwapInContainerResultPacket.cs" />
+    <Compile Include="Packets\Starbound\TileArrayUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\TileDamageUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\TileLiquidUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\TileModificationFailurePacket.cs" />
+    <Compile Include="Packets\Starbound\TileUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\UniverseTimeUpdatePacket.cs" />
+    <Compile Include="Packets\Starbound\WorldClientStateUpdatePacket.cs" />
+    <Compile Include="Starbound\BTree\Block.cs" />
+    <Compile Include="Starbound\BTree\BlockSignature.cs" />
+    <Compile Include="Starbound\BTree\BTreeDb4.cs" />
+    <Compile Include="Starbound\BTree\Document.cs" />
+    <Compile Include="Starbound\BTree\Key.cs" />
+    <Compile Include="Starbound\BTree\LeafReader.cs" />
+    <Compile Include="Starbound\BTree\Metadata.cs" />
+    <Compile Include="Starbound\BTree\SBBF03.cs" />
+    <Compile Include="Starbound\BTree\Tile.cs" />
+    <Compile Include="Starbound\BTree\VariantDatabase.cs" />
+    <Compile Include="Starbound\BTree\World.cs" />
+    <Compile Include="Starbound\CelestialRequest.cs" />
+    <Compile Include="Starbound\ChatSendMode.cs" />
+    <Compile Include="Starbound\DamageNotification.cs" />
+    <Compile Include="Starbound\Entities\Entity.cs" />
+    <Compile Include="Starbound\Entities\EntityType.cs" />
+    <Compile Include="Starbound\InteractionType.cs" />
+    <Compile Include="Starbound\ItemDescriptor.cs" />
+    <Compile Include="Starbound\Player.cs" />
+    <Compile Include="Events\EventManager.cs" />
+    <Compile Include="Events\EventMethod.cs" />
+    <Compile Include="Events\EventObject.cs" />
+    <Compile Include="Events\Packets\PacketEvent.cs" />
+    <Compile Include="Events\Packets\PacketEventAttribute.cs" />
+    <Compile Include="Events\Packets\PacketEventManager.cs" />
+    <Compile Include="Events\Packets\PacketEventMethod.cs" />
+    <Compile Include="Events\StarEvent.cs" />
+    <Compile Include="Extensions\StarProxyExtensions.cs" />
+    <Compile Include="Extensions\ExceptionExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
+    <Compile Include="Logging\StarLog.cs" />
+    <Compile Include="Misc\StarColor.cs" />
+    <Compile Include="Misc\StarColorCollection.cs" />
+    <Compile Include="Misc\Uuid.cs" />
+    <Compile Include="Mono\MonoHelper.cs" />
+    <Compile Include="Networking\StarReader.cs" />
+    <Compile Include="Networking\StarWriter.cs" />
+    <Compile Include="Packets\IPacketHandler.cs" />
+    <Compile Include="Packets\Packet.cs" />
+    <Compile Include="Packets\PacketSegmentProcessor.cs" />
+    <Compile Include="Packets\PacketHandler.cs" />
+    <Compile Include="Packets\PacketReader.cs" />
+    <Compile Include="Packets\PacketType.cs" />
+    <Compile Include="Packets\GenericPacket.cs" />
+    <Compile Include="Packets\Serialization\Attributes\GreedyAttribute.cs" />
+    <Compile Include="Packets\Serialization\Attributes\StarSerializeAttribute.cs" />
+    <Compile Include="Packets\Serialization\PacketSerializer.cs" />
+    <Compile Include="Packets\Serialization\SerializableType.cs" />
+    <Compile Include="Packets\Serialization\StarSerializableType.cs" />
+    <Compile Include="Packets\Starbound\ChatReceivePacket.cs" />
+    <Compile Include="Packets\Starbound\ClientConnectPacket.cs" />
+    <Compile Include="Plugins\CSharp\CSPlugin.cs" />
+    <Compile Include="Plugins\CSharp\CSPluginErrorStatus.cs" />
+    <Compile Include="Plugins\CSharp\CSPluginManager.cs" />
+    <Compile Include="Plugins\IPlugin.cs" />
+    <Compile Include="Plugins\IPluginManager.cs" />
+    <Compile Include="Plugins\PluginManager.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Security\StarSecurity.cs" />
+    <Compile Include="Server\ProxyConnectionEventArgs.cs" />
+    <Compile Include="Server\Direction.cs" />
+    <Compile Include="Server\StarProxyManager.cs" />
+    <Compile Include="Server\PacketEventArgs.cs" />
+    <Compile Include="Server\StarClientConnection.cs" />
+    <Compile Include="Server\StarProxy.cs" />
+    <Compile Include="Server\StarConnection.cs" />
+    <Compile Include="Server\StarServer.cs" />
+    <Compile Include="Server\StarServerConnection.cs" />
+    <Compile Include="Starbound\CelestialCoordinates.cs" />
+    <Compile Include="Starbound\CelestialInfo.cs" />
+    <Compile Include="Starbound\RemoteHitRequest.cs" />
+    <Compile Include="Starbound\Sector.cs" />
+    <Compile Include="Starbound\SentMessageMode.cs" />
+    <Compile Include="Starbound\SpawnTarget.cs" />
+    <Compile Include="Starbound\SpawnTargetPosition.cs" />
+    <Compile Include="Starbound\SpawnTargetUniqueEntity.cs" />
+    <Compile Include="Starbound\Tiles\NetTile.cs" />
+    <Compile Include="Starbound\Tiles\TileDamage.cs" />
+    <Compile Include="Starbound\Tiles\TileDamageParameters.cs" />
+    <Compile Include="Starbound\Tiles\TileDamageStatus.cs" />
+    <Compile Include="Starbound\Tiles\TileLayer.cs" />
+    <Compile Include="Starbound\Warp\WarpAction.cs" />
+    <Compile Include="Starbound\Warp\WarpAlias.cs" />
+    <Compile Include="Starbound\Warp\WarpAliasAction.cs" />
+    <Compile Include="Starbound\Warp\WarpToPlayerAction.cs" />
+    <Compile Include="Starbound\Warp\WarpToWorldAction.cs" />
+    <Compile Include="Starbound\Warp\WarpType.cs" />
+    <Compile Include="Starbound\World\CelestialWorldId.cs" />
+    <Compile Include="Starbound\World\ClientShipWorldId.cs" />
+    <Compile Include="Starbound\World\MissionWorldId.cs" />
+    <Compile Include="Starbound\World\UniqueWorldId.cs" />
+    <Compile Include="StarMain.cs" />
+    <Compile Include="Starbound\RecvMessageType.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

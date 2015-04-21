@@ -1,0 +1,73 @@
+﻿#General
+
+WrongPasswordError=Wrong username or password!
+Shutdown=The server has shut down. We'll be back soon!
+
+#Console Commands
+
+ListConsoleCommandName=starlist
+ListConsoleCommandDesc=Lists the console commands
+ListConsoleCommandHelp=starlist <page (default=1)>
+ListConsoleCommandInvalidPage=Please supply a valid page number
+ListConsoleCommandPageFormat=Page {0} of {1}
+
+HelpConsoleCommandName=starhelp
+HelpConsoleCommandDesc=Pass a name of a command in order to receive help on it
+HelpConsoleCommandHelp=Syntax: starhelp <command name> - Displays help information for a specific command
+HelpConsoleCommandNotFound=Command not found!
+
+KickAllConsoleCommandName=kickall
+KickAllConsoleCommandDesc=Kicks all players from the server
+KickAllConsoleCommandHelp=Syntax: kickall "<reason>"
+
+ConsoleListPlayersCommandName=players
+ConsoleListPlayersCommandDesc=Lists players currently online
+ConsoleListPlayersCommandHelp=Syntax: players <page (default=1)>
+ConsoleListPlayersCommandInvalidPage=Please supply a valid page number
+ConsoleListPlayersCommandPageFormat=Page {0} of {1}
+
+ReloadConfigsCommandName=reloadconfigs
+ReloadConfigsCommandDesc=Reloads the configuration files
+ReloadConfigsCommandHelp=Syntax: reloadconfigs
+
+UuidOfCommandName=uuidof
+UuidOfCommandDesc=Displays the Uuid of a player
+UuidOfCommandHelp=Syntax: uuidof <player name>
+UuidOfCommandResponseFormat=Player {0}'s Uuid is {1}
+UuidOfCommandPlayerNotOnlineFormat=Player {0} is not online!
+
+#Player Commands
+
+PlayerCommandChatName=Star
+PlayerCommandPermissionDenied=You do not have permission to use that command!
+
+PlayerHelpCommandName=starhelp
+PlayerHelpCommandDesc=Display help information on the specified command
+PlayerHelpCommandHelp=Syntax: /starhelp <command name>
+
+PlayerListCommandName=starlist
+PlayerListCommandDesc=Lists commands that you can use
+PlayerListCommandHelp=Syntax: /starlist <page (default=1)>
+PlayerListCommandInvalidPage=Please supply a valid page number
+
+PlayerListPlayersCommandName=players
+PlayerListPlayersCommandDesc=Lists players currently online
+PlayerListPlayersCommandHelp=Syntax: /players <page(default=1)> <part of name(default="")>
+PlayerListPlayersCommandInvalidPage=Please supply a valid page number
+PlayerListPlayersCommandPageFormat=Page {0} of {1}
+
+PlayerRegisterAccountCommandName=register
+PlayerRegisterAccountCommandDesc=Registers an account
+PlayerRegisterAccountCommandHelp=Syntax: /register <username> <password> <confirm password>
+PlayerRegisterAccountCommandPasswordError=Passwords are not equal!
+PlayerRegisterAccountCreatedMessage=Your account has been created!
+PlayerRegisterAccountExistsError=There is already an account by that name!
+
+PlayerWarpToPlayerCommandName=warpto
+PlayerWarpToPlayerCommandDesc=Warps you to another player
+PlayerWarpToPlayerCommandHelp=Syntax: /warpto <name> <selection (optional)>
+PlayerWarpToPlayerCommandDupNameMessage=There is more than one player by that name! Please select from the following:
+PlayerWarpToPlayerCommandDupInvalidSel=Invalid selection!
+PlayerWarpToPlayerCommandNotFoundMessage=There is no one connected with the name {0}!
+PlayerWarpToPlayerCommandDupNameFormat={0}. {1} ({2})
+PlayerWarpToPlayerCommandSuccessMessage=You have been warped to {0}!
