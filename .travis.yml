@@ -10,6 +10,7 @@ after_script:
 - bash SharpStar/bin/Release/mkbundle.txt
 deploy:
   provider: s3
+  skip_cleanup: true
   access_key_id: AKIAIZ43C6YADAB5SSZA
   secret_access_key:
     secure: HFfgyVBi6oNSiT9JN4nJUm2HHOSpbjiEQPRbO+UNzKjS0Wfwd9vXHHprNvdutHtJBJgj4wPytUupE0//VukUdGeAmzpTRJbk3p6lCgK8MZqAn73PUZ87KOF6Trl7W9bdlj+oVNgBVwXxwmHY0vkvppTdwAdrXrtLRBkWMOGjXsg=
