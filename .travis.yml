@@ -4,7 +4,7 @@ mono:
 - latest
 script:
 - xbuild /p:Configuration=Release SharpStar.Mono.sln
-after_script:
+before_deploy:
 - mv Lib/* SharpStar/bin/Release
 - mono SharpStar/bin/Release/MkBundleHelper.exe SharpStar/bin/Release/ SharpStar.exe
 - bash SharpStar/bin/Release/mkbundle.txt
@@ -15,7 +15,7 @@ deploy:
   secret_access_key:
     secure: HFfgyVBi6oNSiT9JN4nJUm2HHOSpbjiEQPRbO+UNzKjS0Wfwd9vXHHprNvdutHtJBJgj4wPytUupE0//VukUdGeAmzpTRJbk3p6lCgK8MZqAn73PUZ87KOF6Trl7W9bdlj+oVNgBVwXxwmHY0vkvppTdwAdrXrtLRBkWMOGjXsg=
   bucket: starbound-star
-  local-dir: build/SharpStar/Star/SharpStar/bin/Release
+  local-dir: /home/travis/build/SharpStar/Star/SharpStar/bin/Release
   upload-dir: linux
   acl: public_read
   on:
