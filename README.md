@@ -1,5 +1,4 @@
 # Star
----
 A Starbound proxy server implementation
 
 
@@ -10,11 +9,9 @@ Linux
 Windows
 
 # Downloads
----
 Coming soon!
 
 # Installation
----
 
 ## Linux
 
