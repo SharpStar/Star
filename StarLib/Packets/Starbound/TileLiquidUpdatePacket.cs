@@ -20,27 +20,27 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-    class TileLiquidUpdatePacket : Packet
-    {
-        public override byte PacketId
-        {
-            get
-            {
-                return (byte)PacketType.TileLiquidUpdate;
-            }
-            protected set
-            {
-                throw new NotImplementedException();
-            }
-        }
+    //public class TileLiquidUpdatePacket : Packet
+    //{
+    //    public override byte PacketId
+    //    {
+    //        get
+    //        {
+    //            return (byte)PacketType.TileLiquidUpdate;
+    //        }
+    //        protected set
+    //        {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
 
-        [StarSerialize(0)]
-        public Vec2I Position { get; set; }
+    //    [StarSerialize(0)]
+    //    public Vec2I Position { get; set; }
 
-        [StarSerialize(1)]
-        public byte LiquidId { get; set; }
+    //    [StarSerialize(1)]
+    //    public byte LiquidId { get; set; }
 
-        [StarSerialize(2)]
-        public byte Level { get; set; }
-    }
+    //    [StarSerialize(2)]
+    //    public byte Level { get; set; }
+    //}
 }

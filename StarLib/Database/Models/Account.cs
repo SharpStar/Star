@@ -27,6 +27,8 @@ namespace StarLib.Database.Models
 	{
 		[AutoIncrement]
 		public int Id { get; set; }
+		
+		public Guid InternalId { get; set; }
 
 		[Index(Unique = true)]
 		public string Username { get; set; }

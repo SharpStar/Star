@@ -2,12 +2,18 @@ language: csharp
 solution: SharpStar.sln
 mono:
 - latest
+addons:
+  apt:
+    packages:
+    - p7zip-full
 script:
 - xbuild /p:Configuration=Release SharpStar.Mono.sln
-before_deploy:
+after_script:
 - mv Lib/* SharpStar/bin/Release
 - mono SharpStar/bin/Release/MkBundleHelper.exe SharpStar/bin/Release/ SharpStar.exe
-- bash SharpStar/bin/Release/mkbundle.txt
+- bash SharpStar/bin/Release/mkbundle.txtn
+before_deploy:
+- 7z a Star.zip ./SharpStar/bin/Release/*
 deploy:
   provider: s3
   skip_cleanup: true

@@ -30,9 +30,19 @@ namespace StarLib.Database
 	{
 		public const string StarDbFileName = "star.db";
 
+		private DbMigrator _migrator;
+
 		public StarDb() : base(StarDbFileName)
 		{
+			_migrator = new DbMigrator(StarDbFileName);
+
 			CreateTables();
+			Migrate();
+		}
+
+		public void Migrate()
+		{
+			_migrator.MigrateUp();
 		}
 
 		public void CreateTables()
@@ -59,6 +69,7 @@ namespace StarLib.Database
 				Account account = new Account
 				{
 					Username = username,
+					InternalId = Guid.NewGuid(),
 					PasswordSalt = salt,
 					PasswordHash = hash,
 					GroupId = groupId,
@@ -109,9 +120,9 @@ namespace StarLib.Database
 
 				conn.Save(new Ban
 				{
-					 PlayerName = player.Name,
-					 Uuid = player.Uuid.Id,
-					 AccountId = (includeAccount && player.Account != null) ? player.Account.Id : (int?)null
+					PlayerName = player.Name,
+					Uuid = player.Uuid.Id,
+					AccountId = (includeAccount && player.Account != null) ? player.Account.Id : (int?)null
 				});
 			}
 

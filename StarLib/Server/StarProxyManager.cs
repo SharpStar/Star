@@ -33,6 +33,14 @@ namespace StarLib.Server
 
         protected ConcurrentDictionary<string, StarProxy> Connections;
 
+		public int Count
+		{
+			get
+			{
+				return Connections.Count;
+			}
+		}
+
         public StarProxyManager()
         {
             Connections = new ConcurrentDictionary<string, StarProxy>();
