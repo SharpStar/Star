@@ -36,7 +36,7 @@ namespace StarLib.Localization
 		{
 			base.Load();
 
-			foreach (string line in Regex.Split(Contents, Environment.NewLine))
+			foreach (string line in Contents.Split('\n'))
 			{
 				string line2 = line.Trim();
 
