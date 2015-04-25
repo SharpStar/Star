@@ -151,9 +151,12 @@ namespace SharpStar
 		{
 			StarMain.Instance.CurrentLocalization = new SimpleLocalizationFile("english.l10n");
 			StarMain.Instance.Init();
+
 			StarMain.Instance.ShutdownInitiated += ShutdownInitiated;
 			StarMain.Instance.ConsoleCommandManager.AddCommands(ConsoleCommandsToAdd);
 			StarMain.Instance.Server.AddPacketHandlers(HandlersToAdd);
+
+			StarMain.Instance.Start();
 		}
 
 		private static void ShutdownInitiated(object sender, EventArgs e)

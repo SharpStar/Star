@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StarLib;
@@ -39,7 +40,7 @@ namespace SharpStar.PacketHandlers
 
 			plr.Name = packet.PlayerName;
 			plr.Uuid = packet.Uuid;
-
+			
 			if (!string.IsNullOrEmpty(packet.Account))
 			{
 				Account account = StarMain.Instance.Database.GetAccountByUsername(packet.Account);

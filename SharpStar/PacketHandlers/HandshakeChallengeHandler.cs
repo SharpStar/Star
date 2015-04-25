@@ -33,19 +33,11 @@ namespace SharpStar.PacketHandlers
 		public override void Handle(HandshakeChallengePacket packet, StarConnection connection)
 		{
 			if (packet.IsReceive)
-			{
 				packet.Ignore = true;
-			}
 		}
 
 		public override void HandleSent(HandshakeChallengePacket packet, StarConnection connection)
 		{
-			if (packet.IsReceive)
-			{
-				string hash = StarSecurity.GenerateHash(string.Empty, string.Empty, packet.Salt);
-
-				connection.Proxy.ServerConnection.SendPacket(new HandshakeResponsePacket { PasswordHash = Encoding.UTF8.GetBytes(hash) });
-			}
 		}
 	}
 }

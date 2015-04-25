@@ -17,35 +17,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using StarLib.Misc;
-using StarLib.Packets.Serialization.Attributes;
-using StarLib.Starbound;
 
-namespace StarLib.Packets.Starbound
+namespace SharpStar.Extensions
 {
-	public class ConnectSucessPacket : Packet
+	public static class ObservableExtensions
 	{
-		public override byte PacketId
+		public static IObservable<TResult> CombineWithPrevious<TSource, TResult>(
+			this IObservable<TSource> source,
+			Func<TSource, TSource, TResult> resultSelector)
 		{
-			get { return (byte)PacketType.ConnectionSuccess; }
-			protected set { throw new NotImplementedException(); }
+			return source.Scan(
+				Tuple.Create(default(TSource), default(TSource)),
+				(previous, current) => Tuple.Create(previous.Item2, current))
+				.Select(t => resultSelector(t.Item1, t.Item2));
 		}
-
-		[Greedy]
-		[StarSerialize(0)]
-		public IList<byte> Data { get; set; }
-
-		//[StarSerialize(0)]
-		//public uint ClientId { get; set; }
-
-		//[StarSerialize(1)]
-		//public Uuid ServerUuid { get; set; }
-
-		//[StarSerialize(2)]
-		//[Greedy]
-		//public IList<CelestialInfo> CelestialInfos { get; set; }
-
 	}
 }

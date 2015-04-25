@@ -135,14 +135,19 @@ namespace StarLib
 
 			InitPackets();
 
+			Server = new StarServer(ServerConfig, ConnectionManager, DefaultPacketTypes.ToArray());
+		}
+
+		public void Start()
+		{
+			_log.Info("Loading plugins...");
+			LoadPlugins();
+
 			_log.Info("Starting server...");
 
-			Server = new StarServer(ServerConfig, ConnectionManager, DefaultPacketTypes.ToArray());
 			Server.StartServer();
 
 			_log.Info("Server is now online!");
-
-			InitPlugins();
 		}
 
 		public void Shutdown()
@@ -172,7 +177,7 @@ namespace StarLib
 			}
 		}
 
-		private void InitPlugins()
+		private void LoadPlugins()
 		{
 			CSPluginManager csManager = new CSPluginManager();
 

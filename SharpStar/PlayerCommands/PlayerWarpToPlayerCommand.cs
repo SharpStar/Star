@@ -55,6 +55,8 @@ namespace SharpStar.PlayerCommands
 				}
 				else if (toProxies.Count == 1)
 				{
+					fromPlr.WarpToPlayerShip(toProxies.First().Player);
+
 					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
 						string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies.First().Player.Name));
 				}
@@ -91,10 +93,10 @@ namespace SharpStar.PlayerCommands
 					return;
 				}
 
-				fromPlr.WarpToPlayer(toProxies[selection].Player);
+				fromPlr.WarpToPlayerShip(toProxies[selection].Player);
 
 				p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies.First().Player.Name));
+						string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies[selection].Player.Name));
 			};
 		}
 

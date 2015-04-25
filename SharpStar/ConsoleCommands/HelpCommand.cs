@@ -30,7 +30,7 @@ namespace SharpStar.ConsoleCommands
 	{
 		private readonly StarLog _logger = StarLog.DefaultLogger;
 
-		public HelpCommand() : base(StarMain.Instance.CurrentLocalization["HelpConsoleCommandName"])
+		public HelpCommand() : base(StarMain.Instance.CurrentLocalization["HelpConsoleCommandName"] ?? "starhelp")
 		{
 			Parts[string.Empty] = p =>
 			{

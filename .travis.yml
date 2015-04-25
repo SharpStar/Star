@@ -15,7 +15,8 @@ before_deploy:
 - bash SharpStar/bin/Release/mkbundle.txt
 - rm SharpStar/bin/Release/MkBundleHelper.exe
 - rm SharpStar/bin/Release/mkbundle.txt
-- 7z a Star.zip ./SharpStar/bin/Release/*
+- mkdir artifacts
+- 7z a artifacts/Star.zip ./SharpStar/bin/Release/*
 deploy:
   provider: s3
   skip_cleanup: true
@@ -23,7 +24,7 @@ deploy:
   secret_access_key:
     secure: HFfgyVBi6oNSiT9JN4nJUm2HHOSpbjiEQPRbO+UNzKjS0Wfwd9vXHHprNvdutHtJBJgj4wPytUupE0//VukUdGeAmzpTRJbk3p6lCgK8MZqAn73PUZ87KOF6Trl7W9bdlj+oVNgBVwXxwmHY0vkvppTdwAdrXrtLRBkWMOGjXsg=
   bucket: starbound-star
-  local-dir: /home/travis/build/SharpStar/Star/SharpStar/bin/Release
+  local-dir: /home/travis/build/SharpStar/Star/artifacts
   upload-dir: linux
   acl: public_read
   on:

@@ -74,7 +74,7 @@ namespace StarLib.Packets
 
 				packetData = null;
 				packetId = 0;
-				
+
 				if (PacketBuffer.Length <= 1)
 					return false;
 
@@ -107,23 +107,23 @@ namespace StarLib.Packets
 
 				if (compressed)	//uncompress this packet if it has been compressed
 				{
-					using (MemoryStream ms = new MemoryStream())
-					{
-						using (MemoryStream dataMs = new MemoryStream(data))
-						{
-							using (ZlibStream zlib = new ZlibStream(ms, CompressionMode.Decompress, true))
-							{
-								dataMs.CopyTo(zlib);
-							}
-						}
+					//using (MemoryStream ms = new MemoryStream())
+					//{
+					//	using (MemoryStream dataMs = new MemoryStream(data))
+					//	{
+					//		using (ZlibStream zlib = new ZlibStream(ms, CompressionMode.Decompress, true))
+					//		{
+					//			dataMs.CopyTo(zlib);
+					//		}
+					//	}
 
-						data = ms.ToArray();
-					}
-					//data = ZlibStream.UncompressBuffer(data);
+					//	data = ms.ToArray();
+					//}
+					data = ZlibStream.UncompressBuffer(data);
 				}
 
 				packetData = data;
-				
+
 				//set the packet buffer to the remaining data for the next packet to process
 				//byte[] rest = reader.ReadToEnd();
 				byte[] rest = new byte[PacketBuffer.Length - pos];

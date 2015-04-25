@@ -25,68 +25,71 @@ using StarLib;
 using StarLib.Extensions;
 using StarLib.Logging;
 using StarLib.Packets;
+using StarLib.Packets.Starbound;
 using StarLib.Server;
 using StarLib.Starbound;
+using SharpStar.Extensions;
 
 namespace SharpStar.Server
 {
-    public class StarClientManager
-    {
+	public class StarClientManager
+	{
 
-        protected ConcurrentDictionary<StarProxy, IDisposable> ProxyHeartbeats { get; private set; }
+		protected ConcurrentDictionary<StarProxy, IDisposable> ProxyHeartbeats { get; private set; }
 
-        private static readonly StarMain star = StarMain.Instance;
+		private static readonly StarMain star = StarMain.Instance;
 
-        public StarClientManager()
-        {
-            ProxyHeartbeats = new ConcurrentDictionary<StarProxy, IDisposable>();
-        }
+		public StarClientManager()
+		{
+			ProxyHeartbeats = new ConcurrentDictionary<StarProxy, IDisposable>();
+		}
 
-        public void StartWatchingProxies()
-        {
-            StarProxyManager connManager = star.ConnectionManager;
-            connManager.ConnectionAdded += (s, e) =>
-            {
-                WatchProxy(e.Proxy);
-            };
+		public void StartWatchingProxies()
+		{
+			StarProxyManager connManager = star.ConnectionManager;
+			connManager.ConnectionAdded += (s, e) =>
+			{
+				WatchProxy(e.Proxy);
+			};
 
-            foreach (StarProxy proxy in connManager)
-            {
-                WatchProxy(proxy);
-            }
-        }
+			foreach (StarProxy proxy in connManager)
+			{
+				WatchProxy(proxy);
+			}
+		}
 
-        public void StopWatchingProxies()
-        {
-            foreach (StarProxy proxy in ProxyHeartbeats.Keys)
-            {
-                StopWatchingProxy(proxy);
-            }
+		public void StopWatchingProxies()
+		{
+			foreach (StarProxy proxy in ProxyHeartbeats.Keys)
+			{
+				StopWatchingProxy(proxy);
+			}
 
-            ProxyHeartbeats.Clear();
-        }
+			ProxyHeartbeats.Clear();
+		}
 
-        public bool StopWatchingProxy(StarProxy proxy)
-        {
-            if (!ProxyHeartbeats.ContainsKey(proxy))
-                return false;
+		public bool StopWatchingProxy(StarProxy proxy)
+		{
+			if (!ProxyHeartbeats.ContainsKey(proxy))
+				return false;
 
-            IDisposable watched;
-            ProxyHeartbeats.TryRemove(proxy, out watched);
-            watched.Dispose();
+			IDisposable watched;
+			ProxyHeartbeats.TryRemove(proxy, out watched);
+			watched.Dispose();
 
-            return true;
-        }
+			return true;
+		}
 
-        protected virtual void WatchProxy(StarProxy proxy)
-        {
-            if (ProxyHeartbeats.ContainsKey(proxy))
-                return;
+		protected virtual void WatchProxy(StarProxy proxy)
+		{
+			if (ProxyHeartbeats.ContainsKey(proxy))
+				return;
 
 			proxy.ConnectionClosed += Proxy_ConnectionClosed;
 
-            RegisterHeartbeatCheck(proxy);
-        }
+			RegisterHeartbeatCheck(proxy);
+			RegisterAccountCheck(proxy);
+		}
 
 		private void Proxy_ConnectionClosed(object sender, ProxyConnectionEventArgs e)
 		{
@@ -96,45 +99,78 @@ namespace SharpStar.Server
 				StarLog.DefaultLogger.Info("Connection {0} disconnected", e.Proxy.ConnectionId);
 		}
 
+		protected void RegisterAccountCheck(StarProxy proxy)
+		{
+			var sEvt = Observable.FromEventPattern<PacketEventArgs>(p => proxy.ServerConnection.PacketReceived += p,
+					p => proxy.ServerConnection.PacketReceived -= p).Select(p => p.EventArgs);
+			var cEvt = Observable.FromEventPattern<PacketEventArgs>(p => proxy.ClientConnection.PacketReceived += p,
+					p => proxy.ClientConnection.PacketReceived -= p).Select(p => p.EventArgs);
+
+			var handshake = cEvt.Where(p => p.Packet is HandshakeResponsePacket).Take(1);
+			var success = sEvt.Where(p => p.Packet is ConnectSuccessPacket).Take(1);
+
+			handshake.Merge(success).Take(2).CombineWithPrevious((p1, p2) => new
+			{
+				Proxy = p2.Proxy,
+				Previous = p1,
+				Current = p2
+			}).Subscribe(p =>
+			{
+				if (p.Proxy.Player.AuthAttempted)
+				{
+					if (p.Previous == null && p.Current.Packet is ConnectSuccessPacket)
+					{
+						p.Current.Packet.Ignore = true;
+					}
+					else if (p.Previous != null && p.Previous.Packet is ConnectSuccessPacket && p.Current.Packet is HandshakeResponsePacket)
+					{
+						p.Previous.Packet.Ignore = false;
+
+						p.Proxy.ClientConnection.SendPacket(p.Previous.Packet);
+					}
+				}
+			});
+		}
+
 		protected void RegisterHeartbeatCheck(StarProxy proxy)
-        {
-            StarConnection sc = proxy.ClientConnection;
+		{
+			StarConnection sc = proxy.ClientConnection;
 
-            var packetRecv = Observable.FromEventPattern<PacketEventArgs>(p => sc.PacketReceived += p, p => sc.PacketReceived -= p);
-            var heartbeat = (from p in packetRecv where p.EventArgs.Packet.PacketType == PacketType.Heartbeat select p)
-                            .Timeout(TimeSpan.FromSeconds(StarMain.Instance.ServerConfig.HeartbeatTimeout));
+			var packetRecv = Observable.FromEventPattern<PacketEventArgs>(p => sc.PacketReceived += p, p => sc.PacketReceived -= p);
+			var heartbeat = (from p in packetRecv where p.EventArgs.Packet.PacketType == PacketType.Heartbeat select p)
+							.Timeout(TimeSpan.FromSeconds(StarMain.Instance.ServerConfig.HeartbeatTimeout));
 
-            var checker = heartbeat.Subscribe(e => { }, e =>
-            {
-                if (!sc.IsDisposed && sc.Connected)
-                {
-                    if (!string.IsNullOrEmpty(proxy.Player.Name))
-                        StarLog.DefaultLogger.Info("Did not receive a heartbeat packet from the player {0} for a while, kicking.", proxy.Player.Name);
-                    else
-                        StarLog.DefaultLogger.Info("Did not receive a heartbeat packet from the client {0} for a while, kicking.", proxy.ConnectionId);
-                }
+			var checker = heartbeat.Subscribe(e => { }, e =>
+			{
+				if (!sc.IsDisposed && sc.Connected)
+				{
+					if (!string.IsNullOrEmpty(proxy.Player.Name))
+						StarLog.DefaultLogger.Info("Did not receive a heartbeat packet from the player {0} for a while, kicking.", proxy.Player.Name);
+					else
+						StarLog.DefaultLogger.Info("Did not receive a heartbeat packet from the client {0} for a while, kicking.", proxy.ConnectionId);
+				}
 
-                try
-                {
+				try
+				{
 					proxy.Kick();
-                }
-                catch
-                {
-                }
-            }, () => { });
+				}
+				catch
+				{
+				}
+			}, () => { });
 
-            sc.Disconnected += (s, e) =>
-            {
-                IDisposable watched;
+			sc.Disconnected += (s, e) =>
+			{
+				IDisposable watched;
 
-                ProxyHeartbeats.TryRemove(proxy, out watched);
+				ProxyHeartbeats.TryRemove(proxy, out watched);
 
-                if (watched != null)
-                    watched.Dispose();
-            };
+				if (watched != null)
+					watched.Dispose();
+			};
 
-            ProxyHeartbeats.TryAdd(proxy, checker);
-        }
+			ProxyHeartbeats.TryAdd(proxy, checker);
+		}
 
-    }
+	}
 }

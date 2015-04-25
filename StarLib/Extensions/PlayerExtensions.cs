@@ -20,23 +20,35 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StarLib.Misc;
+using StarLib.Packets;
 using StarLib.Packets.Starbound;
 using StarLib.Starbound;
 using StarLib.Starbound.Warp;
+using StarLib.Starbound.World;
 
 namespace StarLib.Extensions
 {
 	public static class PlayerExtensions
 	{
-		public static void WarpToPlayer(this Player player, Player otherPlayer)
+		public static void WarpToPlayerShip(this Player player, Player otherPlayer)
 		{
-			player.Proxy.ClientConnection.SendPacket(new PlayerWarpPacket
+			player.Proxy.ServerConnection.SendPacket(new PlayerWarpPacket
 			{
-				Action = new Packets.Any<WarpToWorldAction, WarpToPlayerAction, WarpAliasAction>
+				Action = new Any<WarpToWorldAction, WarpToPlayerAction, WarpAliasAction>
 				{
-					Value = new WarpToPlayerAction
+					Value = new WarpToWorldAction
 					{
-						Uuid = otherPlayer.Uuid
+						WorldId = new Any<UniqueWorldId, CelestialWorldId, ClientShipWorldId, MissionWorldId>
+						{
+							Value = new ClientShipWorldId
+							{
+								Id = otherPlayer.Uuid
+							}
+						},
+						SpawnTarget = new SpawnTarget
+						{
+							Target = new Any<SpawnTargetUniqueEntity, SpawnTargetPosition>()
+						}
 					}
 				}
 			});

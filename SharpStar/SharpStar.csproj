@@ -85,6 +85,7 @@
     <Compile Include="ConsoleCommands\ListPlayersCommand.cs" />
     <Compile Include="ConsoleCommands\ReloadConfigsCommand.cs" />
     <Compile Include="ConsoleCommands\UuidOfCommand.cs" />
+    <Compile Include="Extensions\ObservableExtensions.cs" />
     <Compile Include="Native\NativeMethods.cs" />
     <Compile Include="PacketHandlers\AllPacketsHandler.cs" />
     <Compile Include="PacketHandlers\CelestialRequestHandler.cs" />
@@ -142,6 +143,7 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

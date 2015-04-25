@@ -19,23 +19,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using StarLib.Logging;
-using StarLib.Packets;
-using StarLib.Packets.Starbound;
-using StarLib.Server;
-using StarLib.Starbound.Warp;
-using StarLib.Starbound.World;
+using StarLib.Misc;
+using StarLib.Packets.Serialization.Attributes;
+using StarLib.Starbound;
 
-namespace SharpStar.PacketHandlers
+namespace StarLib.Packets.Starbound
 {
-	public class PlayerWarpHandler : PacketHandler<PlayerWarpPacket>
+	public class ConnectSuccessPacket : Packet
 	{
-		public override void Handle(PlayerWarpPacket packet, StarConnection connection)
+		public override byte PacketId
 		{
+			get { return (byte)PacketType.ConnectionSuccess; }
+			protected set { throw new NotImplementedException(); }
 		}
 
-		public override void HandleSent(PlayerWarpPacket packet, StarConnection connection)
-		{
-		}
+		[Greedy]
+		[StarSerialize(0)]
+		public IList<byte> Data { get; set; }
+
+		//[StarSerialize(0)]
+		//public uint ClientId { get; set; }
+
+		//[StarSerialize(1)]
+		//public Uuid ServerUuid { get; set; }
+
+		//[StarSerialize(2)]
+		//[Greedy]
+		//public IList<CelestialInfo> CelestialInfos { get; set; }
+
 	}
 }

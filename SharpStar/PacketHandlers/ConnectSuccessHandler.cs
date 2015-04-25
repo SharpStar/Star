@@ -24,13 +24,12 @@ using StarLib.Logging;
 using StarLib.Packets;
 using StarLib.Packets.Starbound;
 using StarLib.Server;
-using StarLib.Starbound.Warp;
 
 namespace SharpStar.PacketHandlers
 {
-	public class ConnectSuccessHandler : PacketHandler<ConnectSucessPacket>
+	public class ConnectSuccessHandler : PacketHandler<ConnectSuccessPacket>
 	{
-		public override void Handle(ConnectSucessPacket packet, StarConnection connection)
+		public override void Handle(ConnectSuccessPacket packet, StarConnection connection)
 		{
 			if (!connection.Proxy.Player.AuthSuccess)
 				packet.Ignore = true;
@@ -41,7 +40,7 @@ namespace SharpStar.PacketHandlers
 				StarLog.DefaultLogger.Info("Player {0} has joined", connection.Proxy.Player.Name);
 		}
 
-		public override void HandleSent(ConnectSucessPacket packet, StarConnection connection)
+		public override void HandleSent(ConnectSuccessPacket packet, StarConnection connection)
 		{
 		}
 	}

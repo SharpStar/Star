@@ -72,7 +72,7 @@ namespace StarLib.Database
 					InternalId = Guid.NewGuid(),
 					PasswordSalt = salt,
 					PasswordHash = hash,
-					GroupId = groupId,
+					GroupId = groupId
 				};
 
 				conn.Save(account);

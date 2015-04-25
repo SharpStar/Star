@@ -61,10 +61,7 @@ namespace StarLib.Server
 		{
 			get
 			{
-				lock (_packetHandlers)
-				{
-					return _packetHandlers.ToList();
-				}
+				return _packetHandlers;
 			}
 		}
 
@@ -81,6 +78,8 @@ namespace StarLib.Server
 
 		#region Events
 		public event EventHandler<PacketEventArgs> PacketSending;
+
+		public event EventHandler<PacketEventArgs> PacketSent;
 
 		public event EventHandler<PacketEventArgs> PacketReceived;
 
@@ -126,10 +125,12 @@ namespace StarLib.Server
 		/// <param name="handlers">The handlers to register</param>
 		public void RegisterPacketHandlers(IEnumerable<IPacketHandler> handlers)
 		{
+			var pHandlers = handlers.ToList();
+
 			lock (_packetHandlers)
 			{
-				_packetHandlers.AddRange(handlers);
-				_packetHandlers = _packetHandlers.Distinct().ToList();
+				_packetHandlers.RemoveAll(pHandlers.Contains);
+				_packetHandlers.AddRange(pHandlers);
 			}
 		}
 
@@ -159,6 +160,8 @@ namespace StarLib.Server
 			Interlocked.CompareExchange(ref _connected, 1, 0);
 
 			ConnectionSocket.NoDelay = true;
+
+			FlushPackets();
 
 			_readArgs = new SocketAsyncEventArgs();
 
@@ -342,10 +345,6 @@ namespace StarLib.Server
 
 						packet.Direction = Direction;
 
-						EventHandler<PacketEventArgs> packetArgs = PacketReceived;
-						if (packetArgs != null)
-							packetArgs(this, new PacketEventArgs(Proxy, packet));
-
 						Type pType = packet.GetType();
 
 						var pHandlers = _cachedPacketHandlers.GetOrAdd(pType, p => PacketHandlers.Where(x => x.Type.IsInstanceOfType(packet)).ToList());
@@ -355,16 +354,21 @@ namespace StarLib.Server
 							beforeHandler.HandleBefore(packet, this);
 						}
 
-						OtherConnection.SendPacket(packet);
+						EventHandler<PacketEventArgs> packetArgs = PacketReceived;
+						if (packetArgs != null)
+							packetArgs(this, new PacketEventArgs(Proxy, packet));
 
-						EventHandler<PacketEventArgs> aPacketArgs = AfterPacketReceived;
-						if (aPacketArgs != null)
-							aPacketArgs(this, new PacketEventArgs(Proxy, packet));
+						OtherConnection.SendPacket(packet);
 
 						foreach (IPacketHandler sentHandler in pHandlers)
 						{
 							sentHandler.HandleAfter(packet, this);
 						}
+
+						EventHandler<PacketEventArgs> aPacketArgs = AfterPacketReceived;
+						if (aPacketArgs != null)
+							aPacketArgs(this, new PacketEventArgs(Proxy, packet));
+
 					}
 					catch (Exception ex)
 					{
@@ -415,7 +419,7 @@ namespace StarLib.Server
 				return;
 
 			Packet packet;
-			while (_packetQueue.TryDequeue(out packet) && Connected)
+			while (Connected && _packetQueue.TryDequeue(out packet))
 			{
 				try
 				{
@@ -445,19 +449,19 @@ namespace StarLib.Server
 
 					if (compressed)
 					{
-						//buffer = ZlibStream.CompressBuffer(buffer);
-						using (MemoryStream ms = new MemoryStream())
-						{
-							using (MemoryStream bufMs = new MemoryStream(buffer))
-							{
-								using (ZlibStream zlib = new ZlibStream(bufMs, CompressionMode.Compress, CompressionLevel.Default, true))
-								{
-									zlib.CopyTo(ms);
-								}
-							}
+						buffer = ZlibStream.CompressBuffer(buffer);
+						//using (MemoryStream ms = new MemoryStream())
+						//{
+						//	using (MemoryStream bufMs = new MemoryStream(buffer))
+						//	{
+						//		using (ZlibStream zlib = new ZlibStream(bufMs, CompressionMode.Compress, CompressionLevel.Default, true))
+						//		{
+						//			zlib.CopyTo(ms);
+						//		}
+						//	}
 
-							buffer = ms.ToArray();
-						}
+						//	buffer = ms.ToArray();
+						//}
 					}
 
 					int length = compressed ? -buffer.Length : buffer.Length;
@@ -478,10 +482,19 @@ namespace StarLib.Server
 					//	finalBuffer = finalWriter.ToArray();
 					//}
 
+
 					SocketAsyncEventArgs writeArgs = new SocketAsyncEventArgs();
 					writeArgs.RemoteEndPoint = ConnectionSocket.RemoteEndPoint;
 					writeArgs.SetBuffer(finalBuffer, 0, finalBuffer.Length);
 					writeArgs.Completed += IO_Completed;
+
+					Packet tmpPacket = packet;
+					writeArgs.Completed += (s, e) =>
+					{
+						EventHandler<PacketEventArgs> packetSent = PacketSent;
+						if (packetSent != null)
+							packetSent(this, new PacketEventArgs(Proxy, tmpPacket));
+					};
 
 					if (Connected)
 					{
