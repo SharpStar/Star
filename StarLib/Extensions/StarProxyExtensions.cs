@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using StarLib.Packets.Starbound;
 using StarLib.Server;
@@ -31,14 +30,14 @@ namespace StarLib.Extensions
 		{
 			foreach (string line in message.SeparateString(maxCharsPerLine))
 			{
-				foreach (string line2 in Regex.Split(line, Environment.NewLine))
-                {
+				foreach (string line2 in line.Split('\n'))
+				{
 					proxy.ClientConnection.SendPacket(new ChatReceivePacket
-                    {
-                        Name = name,
-                        Message = line2,
-                    });
-                }
+					{
+						Name = name,
+						Message = line2,
+					});
+				}
 			}
 		}
 

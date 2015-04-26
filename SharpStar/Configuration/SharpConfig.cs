@@ -19,40 +19,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using StarLib.Packets.Serialization.Attributes;
+using Newtonsoft.Json;
+using StarLib.Configuration;
 
-namespace StarLib.Packets
+namespace SharpStar.Configuration
 {
-	public class Any
+	[JsonObject]
+	public class SharpConfig : StarConfiguration
 	{
-		public object Value { get; set; }
+		[JsonProperty]
+		public bool EnableSharpAccounts { get; set; }
 
-		[StarSerialize(0)]
-		public byte Index { get; set; }
-
-		public T GetValue<T>()
+		public override void SetDefaults()
 		{
-			return (T)Value;
+			EnableSharpAccounts = false;
 		}
-	}
-
-	public class Any<T1, T2> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4, T5> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4, T5, T6> : Any
-	{
 	}
 }

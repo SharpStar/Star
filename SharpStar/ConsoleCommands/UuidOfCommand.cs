@@ -28,8 +28,8 @@ namespace SharpStar.ConsoleCommands
 {
 	public class UuidOfCommand : ConsoleCommand
 	{
-		public UuidOfCommand() : base(StarMain.Instance.CurrentLocalization["UuidOfCommandName"])
-        {
+		public UuidOfCommand() : base(StarMain.Instance.CurrentLocalization["UuidOfCommandName"] ?? "uuidof")
+		{
 			Parts["{0}"] = p =>
 			{
 				string playerName = p.Arguments[0];

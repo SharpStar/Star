@@ -19,16 +19,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.DataTypes.Variant
 {
-    /// <summary>
-    /// A Variant key-value pair
-    /// </summary>
-    public class VariantPair : IVariant
-    {
-        public string Key { get; set; }
-
-        public StarVariant Value { get; set; }
-    }
+	public class StarArray
+	{
+		[StarSerialize(0)]
+		public IList<StarVariant> Array { get; set; }
+	}
 }

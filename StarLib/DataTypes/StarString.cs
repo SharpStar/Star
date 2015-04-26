@@ -21,38 +21,21 @@ using System.Text;
 using System.Threading.Tasks;
 using StarLib.Packets.Serialization.Attributes;
 
-namespace StarLib.Packets
+namespace StarLib.DataTypes
 {
-	public class Any
+	public class StarString
 	{
-		public object Value { get; set; }
-
 		[StarSerialize(0)]
-		public byte Index { get; set; }
+		public string Value { get; set; }
 
-		public T GetValue<T>()
+		public static implicit operator StarString(string str)
 		{
-			return (T)Value;
+			return new StarString { Value = str };
 		}
-	}
 
-	public class Any<T1, T2> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4, T5> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4, T5, T6> : Any
-	{
+		public static implicit operator string (StarString starStr)
+		{
+			return starStr.Value;
+		}
 	}
 }

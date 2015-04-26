@@ -32,7 +32,7 @@ namespace SharpStar.PacketHandlers
 	{
 		public override void Handle(HandshakeChallengePacket packet, StarConnection connection)
 		{
-			if (packet.IsReceive)
+			if (packet.IsReceive && Program.Configuration.EnableSharpAccounts)
 				packet.Ignore = true;
 		}
 

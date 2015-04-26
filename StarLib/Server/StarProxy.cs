@@ -63,7 +63,7 @@ namespace StarLib.Server
 		}
 
 		public bool IsDisposed { get; private set; }
-		
+
 		public bool Connected
 		{
 			get
@@ -150,18 +150,14 @@ namespace StarLib.Server
 		{
 			if (!IsDisposed && Running)
 			{
-				Interlocked.CompareExchange(ref _running, 0, 1);
-
-				if (ClientConnection != null && !ClientConnection.IsDisposed)
+				if (ClientConnection != null && !ClientConnection.IsDisposed && ClientConnection.Connected)
 				{
-					if (ClientConnection.Connected)
-						ClientConnection.Stop();
+					ClientConnection.Stop();
 				}
 
-				if (ServerConnection != null && !ServerConnection.IsDisposed)
+				if (ServerConnection != null && !ServerConnection.IsDisposed && ServerConnection.Connected)
 				{
-					if (ServerConnection.Connected)
-						ServerConnection.Stop();
+					ServerConnection.Stop();
 				}
 			}
 		}
@@ -173,7 +169,11 @@ namespace StarLib.Server
 				Close();
 
 				if (ConnectionClosed != null && !ClientConnection.Connected && !ServerConnection.Connected)
+				{
+					Interlocked.CompareExchange(ref _running, 0, 1);
+
 					ConnectionClosed(this, new ProxyConnectionEventArgs(this));
+				}
 			}
 		}
 

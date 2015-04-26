@@ -79,6 +79,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\SharpConfig.cs" />
     <Compile Include="ConsoleCommands\HelpCommand.cs" />
     <Compile Include="ConsoleCommands\KickAllCommand.cs" />
     <Compile Include="ConsoleCommands\ListCommand.cs" />
@@ -95,6 +96,7 @@
     <Compile Include="PacketHandlers\ClientDisconnectRequestHandler.cs" />
     <Compile Include="PacketHandlers\ConnectFailureHandler.cs" />
     <Compile Include="PacketHandlers\ConnectSuccessHandler.cs" />
+    <Compile Include="PacketHandlers\GiveItemHandler.cs" />
     <Compile Include="PacketHandlers\HandshakeChallengeHandler.cs" />
     <Compile Include="PacketHandlers\HandshakeResponseHandler.cs" />
     <Compile Include="PacketHandlers\PlayerWarpHandler.cs" />

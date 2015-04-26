@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -45,12 +46,8 @@ namespace StarLib.Packets.Serialization
 			new StarSerializableType<long>((writer, val) => writer.Write(val), reader => reader.ReadInt64()),
 			new StarSerializableType<ulong>((writer, val) => writer.Write(val), reader => reader.ReadVLQ()),
 			new StarSerializableType<string>((writer, val) => writer.WriteStarString(val), reader => reader.ReadString()),
-			new StarSerializableType<byte[]>((writer, val) => writer.WriteUInt8Array(val), reader => reader.ReadUInt8Array()),
-			new StarSerializableType<StarVariant>((writer, val) => writer.WriteVariant(val), reader => reader.ReadVariant()),
-			new StarSerializableType<VariantDictionary>((writer, val) => writer.WriteVariant(new StarVariant(new VariantValue(val))), reader => reader.ReadVariant().Value)
+			new StarSerializableType<byte[]>((writer, val) => writer.WriteUInt8Array(val), reader => reader.ReadUInt8Array())
 		};
-
-		public static Dictionary<Type, Tuple<Action<StarWriter, object>, Func<StarReader, object>>> PacketSerializers;
 
 		private static readonly Dictionary<Type, SerializableType> _serializables = Serializables.ToDictionary(p => p.Type);
 
@@ -61,9 +58,13 @@ namespace StarLib.Packets.Serialization
 		private static readonly Expression _collectionLengthReaderExpr = Expression.Constant(_collectionLengthReader);
 		private static readonly Expression _collectionLengthWriterExpr = Expression.Constant(_collectionLengthWriter);
 
+		public static readonly Dictionary<Type, Action<StarWriter, object>> PacketSerializers;
+		public static readonly Dictionary<Type, Func<StarReader, object>> PacketDeserializers;
+
 		static PacketSerializer()
 		{
-			PacketSerializers = new Dictionary<Type, Tuple<Action<StarWriter, object>, Func<StarReader, object>>>();
+			PacketSerializers = new Dictionary<Type, Action<StarWriter, object>>();
+			PacketDeserializers = new Dictionary<Type, Func<StarReader, object>>();
 		}
 
 		/// <summary>
@@ -81,11 +82,11 @@ namespace StarLib.Packets.Serialization
 
 		public static void BuildAndStore(Type type)
 		{
-			if (!PacketSerializers.ContainsKey(type))
-				PacketSerializers.Add(type, Tuple.Create(BuildSerializer(type), BuildDeserializer(type)));
+			BuildSerializer(type);
+			BuildDeserializer(type);
 		}
 
-		static void Serialize(object value, StarWriter writer)
+		public static void Serialize(object value, StarWriter writer)
 		{
 			try
 			{
@@ -95,7 +96,7 @@ namespace StarLib.Packets.Serialization
 
 				var lambda = PacketSerializers[type];
 
-				lambda.Item1(writer, value);
+				lambda(writer, value);
 			}
 			catch (Exception e)
 			{
@@ -111,8 +112,8 @@ namespace StarLib.Packets.Serialization
 		{
 			object result = DeserializeInternal(reader, type);
 
-			if (reader.DataLeft != 0)
-				StarLog.DefaultLogger.Warn("Packet {0} is incomplete!", type.FullName);
+			//if (reader.DataLeft != 0)
+			//	StarLog.DefaultLogger.Warn("Packet {0} is incomplete ({1} bytes left)!", type.FullName, reader.DataLeft);
 
 			return result;
 		}
@@ -123,9 +124,9 @@ namespace StarLib.Packets.Serialization
 			{
 				BuildAndStore(type);
 
-				var lambda = PacketSerializers[type];
+				var lambda = PacketDeserializers[type];
 
-				return lambda.Item2(reader);
+				return lambda(reader);
 			}
 			catch (Exception e)
 			{
@@ -145,31 +146,51 @@ namespace StarLib.Packets.Serialization
 
 		static Action<StarWriter, object> BuildSerializer(Type arg)
 		{
+			if (PacketSerializers.ContainsKey(arg))
+				return PacketSerializers[arg];
+
 			//To store the lambdas in the same dictionary the parameter is boxed and unboxed in runtime.
 			var boxedInstance = Expression.Parameter(typeof(object), "boxedInstance");
 			var instance = Expression.Variable(arg, "instance");
 			var dest = Expression.Parameter(typeof(StarWriter), "dest");
 			var block = Serialize(arg, dest, instance, boxedInstance);
 			var lambda = Expression.Lambda<Action<StarWriter, object>>(block, dest, boxedInstance);
-			return lambda.Compile();
+			var action = lambda.Compile();
+
+			if (!PacketSerializers.ContainsKey(arg))
+				PacketSerializers.Add(arg, action);
+
+			return action;
 		}
 
 		static Func<StarReader, object> BuildDeserializer(Type arg)
 		{
+			if (PacketDeserializers.ContainsKey(arg))
+				return PacketDeserializers[arg];
+
 			var instance = Expression.Variable(arg, "instance");
 			var source = Expression.Parameter(typeof(StarReader), "source");
 			var block = Deserialize(instance, source);
 			var lambda = Expression.Lambda<Func<StarReader, object>>(block, source);
-			return lambda.Compile();
+			var func = lambda.Compile();
+
+			if (!PacketDeserializers.ContainsKey(arg))
+				PacketDeserializers.Add(arg, func);
+
+			return func;
 		}
 
 		static BlockExpression Serialize(Type arg, Expression dest,
 			ParameterExpression instance, Expression boxedInstance)
 		{
-			return Expression.Block(new[] { instance },
+			var write = WriteToBuffer(instance, arg, dest);
+
+			var block = Expression.Block(new[] { instance },
 				Expression.Assign(instance, Expression.Convert(boxedInstance, arg)),
-				WriteToBuffer(instance, arg, dest),
+				write,
 				dest);
+
+			return block;
 		}
 
 		static BlockExpression Deserialize(ParameterExpression instance, Expression stream)
@@ -182,11 +203,12 @@ namespace StarLib.Packets.Serialization
 
 		static BlockExpression WriteToBuffer(Expression instance, Type type, Expression dest)
 		{
-			var members = GetMembers(type).ToArray();
+			var members = GetMembers(type).ToList();
+
 			var expressions = new List<Expression>();
 
 			bool skipOne = false;
-			for (int i = 0; i < members.Length; i++)
+			for (int i = 0; i < members.Count; i++)
 			{
 				if (skipOne)
 				{
@@ -214,7 +236,9 @@ namespace StarLib.Packets.Serialization
 				}
 				else if (IsAnyType(member))
 				{
-					expressions.Add(WriteAnyType(member, dest));
+					var write = WriteAnyType(member, dest);
+
+					expressions.Add(write);
 				}
 				//else if (IsMaybeType(member))
 				//{
@@ -226,7 +250,9 @@ namespace StarLib.Packets.Serialization
 				}
 				else
 				{
-					expressions.Add(WriteOne(dest, member, member.Type, members[i].Item2));
+					var write = WriteOne(dest, member, member.Type, members[i].Item2);
+
+					expressions.Add(write);
 				}
 
 			}
@@ -308,49 +334,36 @@ namespace StarLib.Packets.Serialization
 
 			var typeExpr = Expression.Variable(typeof(Type), "selType");
 
+			var anyIndex = Expression.Property(member, anyIndexProp);
 			var valProp = Expression.Property(member, anyValueProp);
 
 			var ctr = Expression.Variable(typeof(int), "ctr");
 
 			Type[] args = member.Type.GetGenericArguments();
 
-			var gTypes = Expression.Constant(args, typeof(Type[]));
+			var gTypes = Expression.Constant(args);
 
-			var exprs = new List<Expression>();
-			foreach (Type t in args)
-			{
-				var expr = Expression.Block(new[] { typeExpr, ctr },
-					Expression.Assign(typeExpr, Expression.Call(valProp, valType)),
-					Expression.Loop(Expression.Block(
-							Expression.IfThenElse(Expression.LessThan(ctr, Expression.ArrayLength(gTypes)),
-								Expression.Block(
-									Expression.IfThen(
-										Expression.AndAlso(
-										Expression.Equal(typeExpr, Expression.ArrayIndex(gTypes, ctr)),
-										Expression.Equal(typeExpr, Expression.Constant(t))),
-											Expression.Block(
-												Expression.Assign(Expression.Property(member, anyIndexProp),
-													Expression.Convert(Expression.Increment(ctr), typeof(byte))
-												),
-												WriteOne(dest, Expression.Property(member, anyIndexProp), typeof(byte), null),
-												WriteOne(dest, valProp, t, null),
-												Expression.Break(exit)
-											)
-										),
-										Expression.PostIncrementAssign(ctr)
-									),
-								Expression.Break(exit))
-							),
-						exit)
-				);
+			var serializer = typeof(PacketSerializer).GetMethod("Serialize", new[] { typeof(object), typeof(StarWriter) });
 
-				exprs.Add(expr);
-			}
-
-			var newExpr = Expression.Block(
-					Expression.IfThenElse(Expression.NotEqual(valProp, Expression.Constant(null)),
-						Expression.Block(exprs),
-						Expression.Invoke(Expression.Constant(GetSerializableType(typeof(byte)).Serializer), dest, Expression.Constant((byte)0))
+			var newExpr = Expression.Block(new[] { ctr, typeExpr },
+				Expression.IfThenElse(Expression.NotEqual(valProp, Expression.Constant(null)),
+					Expression.Block(
+						Expression.Assign(typeExpr, Expression.Call(valProp, valType)),
+						Expression.Loop(Expression.Block(
+							Expression.IfThenElse(Expression.AndAlso(
+								Expression.LessThan(ctr, Expression.ArrayLength(gTypes)),
+								Expression.Equal(Expression.ArrayIndex(gTypes, ctr), typeExpr)),
+							Expression.Block(
+								Expression.Assign(anyIndex, Expression.Convert(Expression.Increment(ctr), typeof(byte))),
+								Expression.Break(exit)
+								),
+								Expression.PostIncrementAssign(ctr)
+							)
+						), exit),
+						WriteOne(dest, anyIndex, typeof(byte), null),
+						Expression.Call(serializer, valProp, dest)
+					),
+					Expression.Invoke(Expression.Constant(GetSerializableType(typeof(byte)).Serializer), dest, Expression.Constant((byte)0))
 				)
 			);
 
@@ -442,44 +455,22 @@ namespace StarLib.Packets.Serialization
 
 		static BlockExpression ReadAnyType(MemberExpression member, Expression stream, StarSerializeAttribute attrib)
 		{
-			var any = Expression.Variable(member.Type, "type");
-			var anyValue = member.Type.GetProperty("Value");
-			var anyIndex = member.Type.GetProperty("Index");
+			var index = Expression.Property(member, "Index");
+			var value = Expression.Property(member, "Value");
+			var types = Expression.Constant(member.Type.GetGenericArguments());
+			var deserializeMethod = typeof(PacketSerializer).GetMethod("Deserialize", new[] { typeof(StarReader), typeof(Type) });
+			var indexAsInt = Expression.Decrement(Expression.Convert(index, typeof(int)));
+			var actualType = Expression.ArrayIndex(types, indexAsInt);
+			var body = Expression.Block(
+				Expression.Assign(member, Expression.New(member.Type)),
+				ReadOne(stream, index, typeof(byte), attrib),
+				Expression.IfThen(Expression.Not(Expression.Or(
+					Expression.LessThan(indexAsInt, Expression.Constant(0)),
+					Expression.GreaterThanOrEqual(indexAsInt, Expression.ArrayLength(types))
+				)),
+				Expression.Assign(value, Expression.Call(deserializeMethod, stream, actualType))));
 
-			var types = member.Type.GetGenericArguments();
-			var gTypes = Expression.Constant(types, typeof(Type[]));
-
-			var indexExpr = Expression.Variable(typeof(int), "idx");
-			var type = Expression.Variable(typeof(Type), "type");
-
-			var exprs = new List<Expression>();
-			foreach (Type t in types)
-			{
-				var newExpr = Expression.Block(new[] { any, indexExpr, type },
-					Expression.Assign(any, member),
-					Expression.IfThen(
-						Expression.Equal(any, Expression.Constant(null)),
-						Expression.Assign(any, ReadOne(stream, member, member.Type, attrib))
-					),
-					Expression.Assign(indexExpr, Expression.Decrement(Expression.Convert(Expression.Property(member, anyIndex), typeof(int)))),
-					Expression.IfThen(Expression.Not(Expression.Or(
-							Expression.LessThan(indexExpr, Expression.Constant(0)),
-							Expression.GreaterThanOrEqual(indexExpr, Expression.ArrayLength(gTypes))
-						)),
-					Expression.Block(
-						Expression.Assign(type, Expression.ArrayAccess(gTypes, indexExpr)),
-						Expression.IfThen(
-							Expression.Equal(type, Expression.Constant(t)),
-								ReadOne(stream, Expression.Property(any, anyValue), t, null)
-							)
-						)
-					)
-				);
-
-				exprs.Add(newExpr);
-			}
-
-			return Expression.Block(exprs);
+			return body;
 		}
 
 		static Expression WriteOne(Expression stream, MemberExpression source, Type sourceType, StarSerializeAttribute serializeAttrib)
@@ -490,17 +481,35 @@ namespace StarLib.Packets.Serialization
 				var isComplex = IsComplex(type);
 				var func = isComplex
 					? PacketSerializers.ContainsKey(type)
-					? PacketSerializers[type].Item1
+					? PacketSerializers[type]
 					: BuildSerializer(type)
 					: GetSerializableType(type).Serializer;
-				var funcType = GetFuncType(func); //We need to downcast the member because of contravariance with enums or Complex type boxing.
 
 				if (IsList(sourceType))
 				{
-					return GetListWriter(stream, source, type, func, serializeAttrib);
+					var w = GetListWriter(stream, source, type, Expression.Constant(func), serializeAttrib);
+
+					return w;
+				}
+				else if (IsDictionary(sourceType))
+				{
+					Type[] kvTypes = sourceType.GetGenericArguments();
+					Type valType = kvTypes[1];
+
+					var valFunc = IsComplex(valType)
+					? PacketSerializers.ContainsKey(valType)
+					? PacketSerializers[valType]
+					: BuildSerializer(valType)
+					: GetSerializableType(valType).Serializer;
+
+					if (valFunc == null)
+						return Expression.Empty();
+
+					return GetDictionaryWriter(stream, source, kvTypes[0], valType, func, valFunc);
 				}
 
-				var writer = Expression.Invoke(Expression.Constant(func), stream, Expression.Convert(source, funcType)) as Expression;
+				var funcType = GetFuncType(func); //We need to downcast the member because of contravariance with enums or Complex type boxing.
+				var writer = Expression.Invoke(Expression.Constant(func), stream, Expression.Convert(source, funcType));
 
 				return writer;
 			}
@@ -511,16 +520,19 @@ namespace StarLib.Packets.Serialization
 			}
 		}
 
-		static Expression ReadOne(Expression stream, MemberExpression dest, Type destType, StarSerializeAttribute serializeAttrib)
+		static Expression ReadOne(Expression stream, MemberExpression dest, Type destType, StarSerializeAttribute serializeAttrib, bool toObj = false)
 		{
 			//If we're dealing with a collection, take the generic parameter type.
 			var type = GetCollectionTypeOrSelf(destType);
 			//If the type is complex, deserialize recursively, else read primitives.
 			var func = IsComplex(type)
-				? PacketSerializers.ContainsKey(type)
-				? PacketSerializers[type].Item2
+				? PacketDeserializers.ContainsKey(type)
+				? PacketDeserializers[type]
 				: BuildDeserializer(type)
 				: GetSerializableType(type).Deserializer;
+
+			//if (func == null)
+			//	return Expression.Block(Expression.Empty());
 
 			var reader = Expression.Convert(Expression.Invoke(Expression.Constant(func), stream), type) as Expression;
 
@@ -528,11 +540,29 @@ namespace StarLib.Packets.Serialization
 			{
 				return Expression.Assign(dest, GetListReader(stream, dest, reader, type, serializeAttrib));
 			}
+			else if (IsDictionary(destType))
+			{
+				Type[] kvTypes = destType.GetGenericArguments();
+				Type valType = kvTypes[1];
 
-			return Expression.Assign(dest, reader);
+				var valFunc = IsComplex(valType)
+				? PacketDeserializers.ContainsKey(valType)
+				? PacketDeserializers[valType]
+				: BuildDeserializer(valType)
+				: GetSerializableType(valType).Deserializer;
+
+				//if (valFunc == null)
+				//	return Expression.Block(Expression.Empty());
+
+				var valReader = Expression.Convert(Expression.Invoke(Expression.Constant(valFunc), stream), valType) as Expression;
+
+				return Expression.Assign(dest, GetDictionaryReader(stream, reader, valReader, kvTypes[0], valType));
+			}
+
+			return Expression.Assign(dest, toObj ? Expression.Convert(reader, typeof(object)) : reader);
 		}
 
-		static BlockExpression GetListWriter(Expression stream, MemberExpression member, Type genericType, Delegate func, StarSerializeAttribute serializeAttrib)
+		static BlockExpression GetListWriter(Expression stream, MemberExpression member, Type genericType, Expression func, StarSerializeAttribute serializeAttrib)
 		{
 			var counter = Expression.Variable(typeof(int), "counter");
 			var exit = Expression.Label();
@@ -543,7 +573,7 @@ namespace StarLib.Packets.Serialization
 				Expression.Loop(
 					Expression.IfThenElse(Expression.LessThan(counter, listLength),
 						Expression.Block(
-							Expression.Invoke(Expression.Constant(func), stream, currentItem),
+							Expression.Invoke(func, stream, currentItem),
 							Expression.Assign(counter, Expression.Increment(counter))),
 						Expression.Break(exit)),
 					exit));
@@ -568,6 +598,56 @@ namespace StarLib.Packets.Serialization
 			return block;
 		}
 
+		static BlockExpression GetDictionaryWriter(Expression stream, MemberExpression member, Type keyType, Type valType, Delegate keyFunc, Delegate valFunc)
+		{
+			var exit = Expression.Label();
+
+			var count = member.Type.GetProperty("Count");
+			var kvpType = typeof(KeyValuePair<,>).MakeGenericType(keyType, valType);
+			var kvp = Expression.Variable(kvpType, "kvp");
+			var key = kvpType.GetProperty("Key");
+			var val = kvpType.GetProperty("Value");
+			var enumerable = typeof(IEnumerable).GetMethod("GetEnumerator");
+			var enumerator = typeof(IEnumerator);
+			var next = enumerator.GetMethod("MoveNext");
+			var current = enumerator.GetProperty("Current");
+
+			var ie = Expression.Variable(enumerator, "ie");
+			var block = Expression.Block(new[] { kvp, ie },
+				Expression.Assign(ie, Expression.Call(member, enumerable)),
+				Expression.Invoke(_collectionLengthWriterExpr, stream, Expression.Property(member, count)),
+				Expression.Loop(
+					Expression.IfThenElse(Expression.Equal(Expression.Call(ie, next), Expression.Constant(true)),
+						Expression.Block(
+							Expression.Assign(kvp, Expression.Convert(Expression.Property(ie, current), kvpType)),
+							Expression.Invoke(Expression.Constant(keyFunc), stream, Expression.Property(kvp, key)),
+							Expression.Invoke(Expression.Constant(valFunc), stream, Expression.Property(kvp, val))),
+						Expression.Break(exit)),
+					exit));
+			return block;
+		}
+
+		static BlockExpression GetDictionaryReader(Expression stream, Expression keyReader, Expression valueReader, Type keyType, Type valType)
+		{
+			var length = Expression.Variable(typeof(int), "length");
+			var dictType = typeof(Dictionary<,>).MakeGenericType(keyType, valType);
+			var dict = Expression.Variable(dictType, "dict");
+			var exit = Expression.Label();
+			var block = Expression.Block(new[] { length, dict },
+				Expression.Assign(dict, Expression.New(dictType)),
+				Expression.Assign(length, Expression.Invoke(_collectionLengthReaderExpr, stream)),
+				Expression.Loop(
+					Expression.IfThenElse(Expression.LessThan(GetDictionaryCount(dict, keyType, valType), length),
+						Expression.Block(
+							Expression.Call(dict, "Add", null, keyReader, valueReader)
+						),
+						Expression.Break(exit)),
+					exit),
+			dict);
+
+			return block;
+		}
+
 		#region Utility methods
 
 		static Expression ReadLengthIfNotGreedy(Expression stream, MemberExpression member, Expression length, int serializeLength)
@@ -586,6 +666,11 @@ namespace StarLib.Packets.Serialization
 		static MemberExpression GetListCount(Expression member, Type genericType)
 		{
 			return Expression.Property(member, typeof(ICollection<>).MakeGenericType(genericType), "Count");
+		}
+
+		static MemberExpression GetDictionaryCount(Expression member, Type keyType, Type valueType)
+		{
+			return Expression.Property(member, typeof(Dictionary<,>).MakeGenericType(keyType, valueType), "Count");
 		}
 
 		static Expression ShouldReadMore(Expression stream, MemberExpression member, Expression counter, Expression length)
@@ -618,6 +703,11 @@ namespace StarLib.Packets.Serialization
 			return type.IsGenericType && typeof(IList<>).IsAssignableFrom(type.GetGenericTypeDefinition());
 		}
 
+		static bool IsDictionary(Type type)
+		{
+			return type.IsGenericType && typeof(Dictionary<,>).IsAssignableFrom(type.GetGenericTypeDefinition());
+		}
+
 		static bool IsAnyType(Expression member)
 		{
 			return typeof(Any).IsAssignableFrom(member.Type);
@@ -635,7 +725,7 @@ namespace StarLib.Packets.Serialization
 
 		static bool IsComplex(Type type)
 		{
-			return type.IsClass && Serializables.All(p => p.Type != type);
+			return (type.IsInterface || type.IsClass) && Serializables.All(p => p.Type != type);
 		}
 
 		static IEnumerable<Tuple<PropertyInfo, StarSerializeAttribute>> GetMembers(Type type)
@@ -665,7 +755,7 @@ namespace StarLib.Packets.Serialization
 
 		static Type GetCollectionTypeOrSelf(Type type)
 		{
-			if (IsList(type))
+			if (IsList(type) || IsDictionary(type))
 			{
 				return type.GetGenericArguments().First();
 			}

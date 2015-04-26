@@ -19,40 +19,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using StarLib.Packets.Serialization.Attributes;
+using StarLib.Logging;
+using StarLib.Packets;
+using StarLib.Packets.Starbound;
+using StarLib.Server;
 
-namespace StarLib.Packets
+namespace SharpStar.PacketHandlers
 {
-	public class Any
+	public class GiveItemHandler : PacketHandler<GiveItemPacket>
 	{
-		public object Value { get; set; }
-
-		[StarSerialize(0)]
-		public byte Index { get; set; }
-
-		public T GetValue<T>()
+		public override void Handle(GiveItemPacket packet, StarConnection connection)
 		{
-			return (T)Value;
 		}
-	}
 
-	public class Any<T1, T2> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4, T5> : Any
-	{
-	}
-
-	public class Any<T1, T2, T3, T4, T5, T6> : Any
-	{
+		public override void HandleSent(GiveItemPacket packet, StarConnection connection)
+		{
+		}
 	}
 }

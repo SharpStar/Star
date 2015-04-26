@@ -36,14 +36,9 @@ namespace StarLib.Packets.Starbound
 				throw new NotImplementedException();
 			}
 		}
-
-		[StarSerialize(0, Length = 1)]
-		public IList<byte> Unknown { get; set; }
-
-		public ClientDisconnectRequestPacket()
-		{
-			Unknown = new List<byte>(new byte[1]);
-		}
-
+		
+		[StarSerialize(0)]
+		public byte Unknown { get; set; }
+		
 	}
 }

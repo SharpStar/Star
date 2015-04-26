@@ -24,32 +24,32 @@ using StarLib.Security;
 
 namespace StarLib.Configuration
 {
-    [JsonObject]
-    public class ServerConfiguration : StarConfiguration
-    {
+	[JsonObject]
+	public class ServerConfiguration : StarConfiguration
+	{
 		public const string DefaultPluginRepoUrl = "http://sharpstar.org/plugins";
 
 
-        [JsonProperty]
-        public int BindPort { get; set; }
+		[JsonProperty]
+		public int BindPort { get; set; }
 
-        [JsonProperty]
-        public int ServerBindPort { get; set; }
+		[JsonProperty]
+		public int ServerBindPort { get; set; }
 
-        [JsonProperty]
-        public string BindAddress { get; set; }
+		[JsonProperty]
+		public string BindAddress { get; set; }
 
-        [JsonProperty]
-        public string ServerBindAddress { get; set; }
+		[JsonProperty]
+		public string ServerBindAddress { get; set; }
 
-        [JsonProperty]
-        public int MaxConnections { get; set; }
+		[JsonProperty]
+		public int MaxConnections { get; set; }
 
-        [JsonProperty]
-        public int HeartbeatTimeout { get; set; }
+		[JsonProperty]
+		public int HeartbeatTimeout { get; set; }
 
-        [JsonProperty]
-        public string PluginsRepoUrl { get; set; }
+		[JsonProperty]
+		public string PluginsRepoUrl { get; set; }
 
 		[JsonProperty]
 		public bool EnableGuestLogin { get; set; }
@@ -64,16 +64,16 @@ namespace StarLib.Configuration
 		public bool RunAsService { get; set; }
 
 		public override void SetDefaults()
-        {
-            BindPort = 21025;
-            ServerBindPort = 21024;
-            BindAddress = "0.0.0.0";
-            ServerBindAddress = "127.0.0.1";
-            MaxConnections = 100;
-            HeartbeatTimeout = 120; //in seconds
-            PluginsRepoUrl = DefaultPluginRepoUrl;
-            AutoUpdatePlugins = true;
+		{
+			BindPort = 21025;
+			ServerBindPort = 21024;
+			BindAddress = "0.0.0.0";
+			ServerBindAddress = "127.0.0.1";
+			MaxConnections = 100;
+			HeartbeatTimeout = 120;	//in seconds
+			PluginsRepoUrl = DefaultPluginRepoUrl;
+			AutoUpdatePlugins = true;
 			RunAsService = false;
-        }
-    }
+		}
+	}
 }

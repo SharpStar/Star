@@ -14,14 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.DataTypes.Variant
 {
-    /// <summary>
-    /// A dictionary that contains StarVariants
-    /// </summary>
-    public class VariantDictionary : Dictionary<string, StarVariant>, IVariant
-    {
-    }
+	public class StarStringMap
+	{
+		[StarSerialize(0)]
+		public Dictionary<StarString, StarVariant> Map { get; set; }
+	}
 }

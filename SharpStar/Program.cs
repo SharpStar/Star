@@ -15,18 +15,16 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.ServiceProcess;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using log4net.Config;
 using Mono.Unix;
+using Mono.Unix.Native;
+using Newtonsoft.Json;
+using SharpStar.Configuration;
 using SharpStar.ConsoleCommands;
 using SharpStar.Native;
 using SharpStar.PacketHandlers;
@@ -35,6 +33,7 @@ using SharpStar.Server;
 using StarLib;
 using StarLib.Commands.Console;
 using StarLib.Commands.PlayerEvent;
+using StarLib.Configuration;
 using StarLib.Extensions;
 using StarLib.Localization;
 using StarLib.Logging;
@@ -55,7 +54,17 @@ namespace SharpStar
 		private static readonly Lazy<PlayerEventCommand[]> _createPlayerCommands = new Lazy<PlayerEventCommand[]>(CreatePlayerCommands);
 		private static readonly Lazy<IPacketHandler[]> _createPacketHandlers = new Lazy<IPacketHandler[]>(CreatePacketHandlers);
 
-		private static bool _shutdown = false;
+		private static bool _shutdown;
+
+		private static JsonFileConfiguration<SharpConfig> _configFile;
+
+		public static SharpConfig Configuration
+		{
+			get
+			{
+				return _configFile.Config;
+			}
+		}
 
 		public static ConsoleCommand[] ConsoleCommandsToAdd
 		{
@@ -80,12 +89,15 @@ namespace SharpStar
 				return _createPlayerCommands.Value;
 			}
 		}
-		
+
 		static void Main(string[] args)
 		{
 			XmlConfigurator.Configure();
 			AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 			TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+
+			_configFile = new JsonFileConfiguration<SharpConfig>("sharpconfig.json", new JsonSerializerSettings());
+			_configFile.Load();
 
 			Run();
 
@@ -146,7 +158,7 @@ namespace SharpStar
 		{
 			Shutdown();
 		}
-		
+
 		private static void SetupStar()
 		{
 			StarMain.Instance.CurrentLocalization = new SimpleLocalizationFile("english.l10n");
@@ -180,8 +192,8 @@ namespace SharpStar
 		{
 			UnixSignal[] signals =
 			{
-				new UnixSignal (Mono.Unix.Native.Signum.SIGINT),
-				new UnixSignal (Mono.Unix.Native.Signum.SIGTERM)
+				new UnixSignal (Signum.SIGINT),
+				new UnixSignal (Signum.SIGTERM)
 			};
 
 			new Thread(() =>
@@ -260,7 +272,8 @@ namespace SharpStar
 				new ClientDisconnectRequestHandler(),
 				new ChatSendHandler(),
 				new PlayerWarpResultHandler(),
-				new CelestialRequestHandler()
+				new CelestialRequestHandler(),
+				new GiveItemHandler()
 			};
 		}
 

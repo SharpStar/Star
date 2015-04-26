@@ -35,7 +35,7 @@ namespace SharpStar.ConsoleCommands
 		{
 			Parts["{0}"] = p =>
 			{
-				int proxyCount = StarMain.Instance.Server.Proxies.Count();
+				int proxyCount = StarMain.Instance.Server.Proxies.Count;
 
 				foreach (StarProxy proxy in StarMain.Instance.Server.Proxies)
 				{

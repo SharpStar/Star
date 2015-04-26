@@ -37,7 +37,7 @@ namespace StarLib.Extensions
             {
                 foreach (StackFrame f in sf)
                 {
-                    StarLog.DefaultLogger.Error(f.ToString());
+					StarLog.DefaultLogger.Error("{0} ({1}) - {2}", f.GetFileName(), f.GetFileLineNumber(), f.GetMethod().Name);
                 }
             }
         }

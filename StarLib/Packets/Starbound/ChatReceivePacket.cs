@@ -25,32 +25,32 @@ using StarLib.Starbound;
 
 namespace StarLib.Packets.Starbound
 {
-    public class ChatReceivePacket : Packet
-    {
-        public override byte PacketId
-        {
-            get { return (byte)PacketType.ChatReceived; }
-            protected set { throw new NotImplementedException(); }
-        }
+	public class ChatReceivePacket : Packet
+	{
+		public override byte PacketId
+		{
+			get { return (byte)PacketType.ChatReceived; }
+			protected set { throw new NotImplementedException(); }
+		}
 
-        [StarSerialize(0)]
-        public RecvMessageType MessageType { get; set; }
+		[StarSerialize(0)]
+		public RecvMessageType MessageType { get; set; }
 
 
-        [StarSerialize(1)]
-        public string Channel { get; set; }
+		[StarSerialize(1)]
+		public string Channel { get; set; }
 
-        
-        [StarSerialize(2)]
-        public int ClientId { get; set; }
 
-        
-        [StarSerialize(3)]
-        public string Name { get; set; }
+		[StarSerialize(2)]
+		public int ClientId { get; set; }
 
-        
-        [StarSerialize(4)]
-        public string Message { get; set; }
+
+		[StarSerialize(3)]
+		public string Name { get; set; }
+
+
+		[StarSerialize(4)]
+		public string Message { get; set; }
 
 		public ChatReceivePacket()
 		{
@@ -58,5 +58,5 @@ namespace StarLib.Packets.Starbound
 			Name = string.Empty;
 			Message = string.Empty;
 		}
-    }
+	}
 }

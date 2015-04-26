@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+using System.Collections.Generic;
 using StarLib.DataTypes;
 using StarLib.DataTypes.Variant;
 using StarLib.Packets;
@@ -21,18 +22,20 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Starbound
 {
-    public class ItemDescriptor
-    {
+	public class ItemDescriptor
+	{
 		[StarSerialize(0)]
 		public string Name { get; set; }
+		
 
 		[StarSerialize(1)]
-		public int Count { get; set; } //is this right?
+		public StarVariant Parameters { get; set; }
 
+		[Greedy]
 		[StarSerialize(2)]
-        public StarVariant Parameters { get; set; }
+		public IList<byte> Unknown { get; set; }
 
-        [StarSerialize(3)]
-        public Maybe<byte[]> ParametersSha256 { get; set; }
-    }
+		//[StarSerialize(2)]
+		//public Maybe<byte[]> ParametersSha256 { get; set; }
+	}
 }

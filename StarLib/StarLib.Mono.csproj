@@ -152,11 +152,11 @@
     <Compile Include="Database\Models\Permission.cs" />
     <Compile Include="Database\SqliteDb.cs" />
     <Compile Include="Database\StarDb.cs" />
+    <Compile Include="DataTypes\StarString.cs" />
     <Compile Include="DataTypes\Variant\IVariant.cs" />
+    <Compile Include="DataTypes\Variant\StarArray.cs" />
+    <Compile Include="DataTypes\Variant\StarStringMap.cs" />
     <Compile Include="DataTypes\Variant\StarVariant.cs" />
-    <Compile Include="DataTypes\Variant\VariantDictionary.cs" />
-    <Compile Include="DataTypes\Variant\VariantPair.cs" />
-    <Compile Include="DataTypes\Variant\VariantValue.cs" />
     <Compile Include="DataTypes\Vec2F.cs" />
     <Compile Include="DataTypes\Vec2I.cs" />
     <Compile Include="DataTypes\Vec3I.cs" />

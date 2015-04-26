@@ -135,10 +135,5 @@ namespace StarLib.Networking
 
 			return -((long)(value >> 1) + 1);
 		}
-
-		public StarVariant ReadVariant()
-		{
-			return StarVariant.ReadFrom(this);
-		}
 	}
 }

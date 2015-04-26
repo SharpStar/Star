@@ -84,7 +84,7 @@ namespace StarLib.Packets
 				throw new ArgumentException(string.Format("Packet type {0} has no default constructor!", type.FullName), "type");
 
 			Packet tempPacket = (Packet)Activator.CreateInstance(type);
-			
+
 			_packets.Add(tempPacket.PacketId, type);
 		}
 
@@ -142,7 +142,17 @@ namespace StarLib.Packets
 				if (_packets.ContainsKey(packetId))
 				{
 					using (StarReader reader = new StarReader(data))
+					{
 						packet = PacketSerializer.Deserialize(reader, _packets[packetId]) as Packet;
+
+						if (reader.DataLeft != 0)
+						{
+							if (packet != null)
+								StarLog.DefaultLogger.Warn("Packet {0} is incomplete ({1} bytes left)!", packet.GetType().FullName, reader.DataLeft);
+							else
+								StarLog.DefaultLogger.Warn("Packet {0} is incomplete ({1} bytes left)!", packetId, reader.DataLeft);
+						}
+					}
 				}
 				else
 				{

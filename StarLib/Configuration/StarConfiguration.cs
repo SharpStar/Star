@@ -22,8 +22,8 @@ using System.Threading.Tasks;
 
 namespace StarLib.Configuration
 {
-    public abstract class StarConfiguration
-    {
-        public abstract void SetDefaults();
-    }
+	public abstract class StarConfiguration
+	{
+		public abstract void SetDefaults();
+	}
 }

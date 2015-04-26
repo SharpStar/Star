@@ -20,6 +20,7 @@ using Mono;
 using StarLib.DataTypes;
 using StarLib.DataTypes.Variant;
 using StarLib.Networking;
+using StarLib.Packets.Serialization;
 
 namespace StarLib.Starbound.BTree
 {
@@ -51,8 +52,7 @@ namespace StarLib.Starbound.BTree
 			reader.ReadByte();
 
 			doc.Version = DataConverter.BigEndian.GetInt32(reader.ReadBytes(4), 0);
-
-			doc.Data = reader.ReadVariant();
+			doc.Data = (StarVariant)PacketSerializer.Deserialize(reader, typeof(StarVariant));
 
 			return doc;
 
