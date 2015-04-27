@@ -24,6 +24,7 @@ using FluentMigrator;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Announcers;
 using FluentMigrator.Runner.Initialization;
+using StarLib.Database.Mono;
 
 namespace StarLib.Database
 {
@@ -51,9 +52,10 @@ namespace StarLib.Database
 			string connString = string.Format("Data Source={0}", DatabaseFile);
 
 			var options = new MigrationOptions { PreviewOnly = false, Timeout = 0 };
-			var factory = new FluentMigrator.Runner.Processors.SQLite.SQLiteProcessorFactory();
+			//var factory = new FluentMigrator.Runner.Processors.SQLite.SQLiteProcessorFactory();
+			var factory = new MonoSQLiteProcessorFactory();
 			var assembly = Assembly.GetExecutingAssembly();
-
+			
 			var announcer = new NullAnnouncer();
 			var migrationContext = new RunnerContext(announcer);
 			var processor = factory.Create(connString, announcer, options);
@@ -67,6 +69,7 @@ namespace StarLib.Database
 			var runner = GetRunner();
 
 			runner.MigrateUp(true);
+			runner.Processor.Dispose();
 		}
 	}
 }

@@ -20,6 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Mono.Addins;
+using StarLib.Extensions;
 using StarLib.Logging;
 
 namespace StarLib.Plugins.CSharp
@@ -50,7 +51,7 @@ namespace StarLib.Plugins.CSharp
 		public void ReportError(string message, Exception exception)
 		{
 			_logger.Error(message);
-			_logger.Error(exception.ToString());
+			exception.LogError();
 		}
 
 		public void Cancel()

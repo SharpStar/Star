@@ -115,7 +115,6 @@ namespace StarLib
 			ConsoleCommandManager = new ConsoleCommandManager();
 			ConnectionManager = new StarProxyManager();
 			Configurations = new List<IConfiguration>();
-			Database = new StarDb();
 
 			_jsonSettings = new JsonSerializerSettings();
 			ReadStarConfigs();
@@ -132,7 +131,6 @@ namespace StarLib
 				throw new Exception("Star has already been initialized!");
 
 			Initialized = true;
-
 			InitPackets();
 
 			Server = new StarServer(ServerConfig, ConnectionManager, DefaultPacketTypes.ToArray());
@@ -140,6 +138,11 @@ namespace StarLib
 
 		public void Start()
 		{
+			InitPlugins();
+
+			_log.Info("Loading database...");
+			Database = new StarDb();
+
 			_log.Info("Loading plugins...");
 			LoadPlugins();
 
@@ -177,13 +180,20 @@ namespace StarLib
 			}
 		}
 
-		private void LoadPlugins()
+		private void InitPlugins()
 		{
 			CSPluginManager csManager = new CSPluginManager();
+			csManager.Init("plugins");
 
 			PluginManagers.Add(csManager);
+		}
 
-			csManager.LoadPlugins("plugins");
+		private void LoadPlugins()
+		{
+			foreach (IPluginManager ipm in PluginManagers)
+			{
+				ipm.LoadPlugins("plugins");
+			}
 		}
 
 		public bool PassPlayerEventCommand(string command, Player player)

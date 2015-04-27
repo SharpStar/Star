@@ -44,6 +44,8 @@ namespace StarLib.Plugins.CSharp
 
 		private readonly ConcurrentDictionary<string, CSPlugin> _plugins;
 
+		private readonly CSPluginErrorStatus _errorStatus = new CSPluginErrorStatus();
+
 		private static readonly Version StarVersion = Assembly.GetEntryAssembly().GetName().Version;
 
 		public List<CSPlugin> Plugins
@@ -59,7 +61,7 @@ namespace StarLib.Plugins.CSharp
 			_plugins = new ConcurrentDictionary<string, CSPlugin>();
 		}
 
-		public override void LoadPlugins(string dir)
+		public void Init(string dir)
 		{
 			if (!Directory.Exists(dir))
 				Directory.CreateDirectory(dir);
@@ -67,6 +69,8 @@ namespace StarLib.Plugins.CSharp
 			if (!AddinManager.IsInitialized)
 			{
 				AddinManager.Initialize(".", dir);
+				AddinManager.Registry.Update(_errorStatus);
+
 				AddinManager.AddExtensionNodeHandler(typeof(CSPlugin), OnExtensionChanged);
 				AddinManager.AddinLoadError += AddinManager_AddinLoadError;
 			}
@@ -76,17 +80,18 @@ namespace StarLib.Plugins.CSharp
 			try
 			{
 				if (!SetupService.Repositories.ContainsRepository(StarMain.Instance.ServerConfig.PluginsRepoUrl))
-					SetupService.Repositories.RegisterRepository(new CSPluginErrorStatus(), StarMain.Instance.ServerConfig.PluginsRepoUrl, false);
+					SetupService.Repositories.RegisterRepository(_errorStatus, StarMain.Instance.ServerConfig.PluginsRepoUrl, false);
 
-				SetupService.Repositories.UpdateAllRepositories(new CSPluginErrorStatus());
+				SetupService.Repositories.UpdateAllRepositories(_errorStatus);
 			}
 			catch (Exception ex)
 			{
 				ex.LogError();
 			}
+		}
 
-			AddinManager.Registry.Update(null);
-
+		public override void LoadPlugins(string dir)
+		{
 			if (StarMain.Instance.ServerConfig.AutoUpdatePlugins)
 			{
 				UpdatePlugins();

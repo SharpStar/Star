@@ -150,6 +150,8 @@
     <Compile Include="Database\Models\Character.cs" />
     <Compile Include="Database\Models\Group.cs" />
     <Compile Include="Database\Models\Permission.cs" />
+    <Compile Include="Database\Mono\MonoSqliteDbFactory.cs" />
+    <Compile Include="Database\Mono\MonoSQLiteProcessorFactory.cs" />
     <Compile Include="Database\SqliteDb.cs" />
     <Compile Include="Database\StarDb.cs" />
     <Compile Include="DataTypes\StarString.cs" />

@@ -18,6 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using ServiceStack.OrmLite;
 using StarLib.Database.Models;
@@ -29,10 +30,14 @@ namespace StarLib.Database
 	public sealed class StarDb : SqliteDb
 	{
 		public const string StarDbFileName = "star.db";
+		public const string DbDirectory = "databases";
 
-		private DbMigrator _migrator;
+		private static readonly string AssemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+		private static readonly string DbFileLocation = Path.Combine(AssemblyDir, DbDirectory, StarDbFileName);
 
-		public StarDb() : base(StarDbFileName)
+		private readonly DbMigrator _migrator;
+
+		public StarDb() : base(DbFileLocation)
 		{
 			_migrator = new DbMigrator(StarDbFileName);
 
