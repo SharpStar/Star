@@ -26,14 +26,14 @@ using StarLib.Server;
 
 namespace SharpStar.PacketHandlers
 {
-	public class GiveItemHandler : PacketHandler<GiveItemPacket>
-	{
-		public override void Handle(GiveItemPacket packet, StarConnection connection)
-		{
-		}
+	//public class GiveItemHandler : PacketHandler<GiveItemPacket>
+	//{
+	//	public override void Handle(GiveItemPacket packet, StarConnection connection)
+	//	{
+	//	}
 
-		public override void HandleSent(GiveItemPacket packet, StarConnection connection)
-		{
-		}
-	}
+	//	public override void HandleSent(GiveItemPacket packet, StarConnection connection)
+	//	{
+	//	}
+	//}
 }

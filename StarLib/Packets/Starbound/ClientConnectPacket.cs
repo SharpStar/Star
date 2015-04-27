@@ -47,13 +47,16 @@ namespace StarLib.Packets.Starbound
 		public byte[] Shipworld { get; set; }
 
 		[StarSerialize(5)]
-		public int ShipLevel { get; set; }
+		public byte[] ShipUpgrades { get; set; }
 
-		[StarSerialize(6)]
-		public int MaxFuel { get; set; }
+		//[StarSerialize(5)]
+		//public int ShipLevel { get; set; }
 
-		[StarSerialize(7)]
-		public IList<string> Capabilities { get; set; }
+		//[StarSerialize(6)]
+		//public int MaxFuel { get; set; }
+
+		//[StarSerialize(7)]
+		//public IList<string> Capabilities { get; set; }
 
 		[StarSerialize(8)]
 		public string Account { get; set; }

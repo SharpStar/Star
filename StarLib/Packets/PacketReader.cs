@@ -152,6 +152,9 @@ namespace StarLib.Packets
 							else
 								StarLog.DefaultLogger.Warn("Packet {0} is incomplete ({1} bytes left)!", packetId, reader.DataLeft);
 						}
+
+						if (packet == null)
+							StarLog.DefaultLogger.Warn("Error deserializing packet {0} ({1})", (PacketType)packetId, packetId);
 					}
 				}
 				else

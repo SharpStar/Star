@@ -20,6 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StarLib;
+using StarLib.Logging;
 using StarLib.Networking;
 using StarLib.Packets;
 using StarLib.Packets.Starbound;

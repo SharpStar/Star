@@ -20,28 +20,28 @@ using StarLib.Starbound;
 
 namespace StarLib.Packets.Starbound
 {
-	public class DamageRequestPacket : Packet
-	{
-		public override byte PacketId
-		{
-			get
-			{
-				return (byte)PacketType.DamageRequest;
-			}
-			protected set
-			{
-				throw new NotImplementedException();
-			}
-		}
+	//public class DamageRequestPacket : Packet
+	//{
+	//	public override byte PacketId
+	//	{
+	//		get
+	//		{
+	//			return (byte)PacketType.DamageRequest;
+	//		}
+	//		protected set
+	//		{
+	//			throw new NotImplementedException();
+	//		}
+	//	}
 
 
-		[StarSerialize(0)]
-		public int CauseEntityId { get; set; }
+	//	[StarSerialize(0)]
+	//	public int CauseEntityId { get; set; }
 
-		[StarSerialize(1)]
-		public int TargetEntityId { get; set; }
+	//	[StarSerialize(1)]
+	//	public int TargetEntityId { get; set; }
 
-		[StarSerialize(2)]
-		public DamageNotification DamageRequest { get; set; }
-	}
+	//	[StarSerialize(2)]
+	//	public DamageNotification DamageRequest { get; set; }
+	//}
 }

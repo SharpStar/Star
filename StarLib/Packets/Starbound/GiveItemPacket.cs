@@ -20,21 +20,21 @@ using StarLib.Starbound;
 
 namespace StarLib.Packets.Starbound
 {
-	public class GiveItemPacket : Packet
-	{
-		public override byte PacketId
-		{
-			get
-			{
-				return (byte)PacketType.GiveItem;
-			}
-			protected set
-			{
-				throw new NotImplementedException();
-			}
-		}
+	//public class GiveItemPacket : Packet
+	//{
+	//	public override byte PacketId
+	//	{
+	//		get
+	//		{
+	//			return (byte)PacketType.GiveItem;
+	//		}
+	//		protected set
+	//		{
+	//			throw new NotImplementedException();
+	//		}
+	//	}
 
-		[StarSerialize(0)]
-		public ItemDescriptor ItemDescriptor { get; set; }
-	}
+	//	[StarSerialize(0)]
+	//	public ItemDescriptor ItemDescriptor { get; set; }
+	//}
 }
