@@ -30,7 +30,7 @@ namespace StarLib.Packets.Starbound
 			get { return (byte)PacketType.ClientConnect; }
 			protected set { throw new NotImplementedException(); }
 		}
-		
+
 		[StarSerialize(0)]
 		public byte[] AssetDigest { get; set; }
 
@@ -44,26 +44,19 @@ namespace StarLib.Packets.Starbound
 		public string Species { get; set; }
 
 		[StarSerialize(4)]
-		public byte[] Shipworld { get; set; }
+		public Dictionary<byte[], Maybe<byte[]>> ShipChunks { get; set; }
 
-		[StarSerialize(5)]
-		public byte[] ShipUpgrades { get; set; }
-
-		//[StarSerialize(5)]
-		//public int ShipLevel { get; set; }
-
-		//[StarSerialize(6)]
-		//public int MaxFuel { get; set; }
-
-		//[StarSerialize(7)]
-		//public IList<string> Capabilities { get; set; }
+		[StarSerialize(7)]
+		public int ShipLevel { get; set; }
 
 		[StarSerialize(8)]
-		public string Account { get; set; }
+		public int MaxFuel { get; set; }
 
-		[Greedy]
 		[StarSerialize(9)]
-		public IList<byte> Unknown { get; set; }
+		public IList<string> Capabilities { get; set; }
+
+		[StarSerialize(10)]
+		public string Account { get; set; }
 
 	}
 }

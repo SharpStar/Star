@@ -29,14 +29,14 @@ using StarLib.Starbound;
 
 namespace SharpStar.PacketHandlers
 {
-	public class CelestialRequestHandler : PacketHandler<CelestialRequestPacket>
-	{
-		public override void Handle(CelestialRequestPacket packet, StarConnection connection)
-		{
-		}
+	//public class CelestialRequestHandler : PacketHandler<CelestialRequestPacket>
+	//{
+	//	public override void Handle(CelestialRequestPacket packet, StarConnection connection)
+	//	{
+	//	}
 
-		public override void HandleSent(CelestialRequestPacket packet, StarConnection connection)
-		{
-		}
-	}
+	//	public override void HandleSent(CelestialRequestPacket packet, StarConnection connection)
+	//	{
+	//	}
+	//}
 }

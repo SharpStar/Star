@@ -23,7 +23,7 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.DataTypes.Variant
 {
-	public class StarArray
+	public class StarVariantArray
 	{
 		[StarSerialize(0)]
 		public IList<StarVariant> Array { get; set; }

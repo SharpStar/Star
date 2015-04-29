@@ -25,14 +25,15 @@ namespace StarLib.Packets
 {
 	public class Maybe
 	{
-		public bool Initialized { get; set; }
+		
 	}
 
 	public class Maybe<T> : Maybe
 	{
 		private T _value;
 		
-		[StarSerialize(0)]
+		public bool Initialized { get; set; }
+
 		public T Value
 		{
 			get

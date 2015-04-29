@@ -156,7 +156,7 @@
     <Compile Include="Database\StarDb.cs" />
     <Compile Include="DataTypes\StarString.cs" />
     <Compile Include="DataTypes\Variant\IVariant.cs" />
-    <Compile Include="DataTypes\Variant\StarArray.cs" />
+    <Compile Include="DataTypes\Variant\StarVariantArray.cs" />
     <Compile Include="DataTypes\Variant\StarStringMap.cs" />
     <Compile Include="DataTypes\Variant\StarVariant.cs" />
     <Compile Include="DataTypes\Vec2F.cs" />

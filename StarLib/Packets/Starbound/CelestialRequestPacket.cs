@@ -24,22 +24,21 @@ using StarLib.Starbound;
 
 namespace StarLib.Packets.Starbound
 {
-	public class CelestialRequestPacket : Packet
-	{
-		public override byte PacketId
-		{
-			get
-			{
-				return (byte)PacketType.CelestialRequest;
-			}
-			protected set
-			{
-				throw new NotImplementedException();
-			}
-		}
+	//public class CelestialRequestPacket : Packet
+	//{
+	//	public override byte PacketId
+	//	{
+	//		get
+	//		{
+	//			return (byte)PacketType.CelestialRequest;
+	//		}
+	//		protected set
+	//		{
+	//			throw new NotImplementedException();
+	//		}
+	//	}
 		
-		[StarSerialize(0)]
-		public IList<CelestialRequest> Requests { get; set; }
-
-	}
+	//	[StarSerialize(0)]
+	//	public IList<CelestialRequest> Requests { get; set; }
+	//}
 }

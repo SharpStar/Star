@@ -24,22 +24,22 @@ using StarLib.Starbound;
 
 namespace StarLib.Packets.Starbound
 {
-	public class HitRequestPacket : Packet
-	{
-		public override byte PacketId
-		{
-			get
-			{
-				return (byte)PacketType.HitRequest;
-			}
-			protected set
-			{
-				throw new NotImplementedException();
-			}
-		}
+	//public class HitRequestPacket : Packet
+	//{
+	//	public override byte PacketId
+	//	{
+	//		get
+	//		{
+	//			return (byte)PacketType.HitRequest;
+	//		}
+	//		protected set
+	//		{
+	//			throw new NotImplementedException();
+	//		}
+	//	}
 
-		[StarSerialize(0)]
-		public RemoteHitRequest RemoteRequest { get; set; }
+	//	[StarSerialize(0)]
+	//	public RemoteHitRequest RemoteRequest { get; set; }
 
-	}
+	//}
 }

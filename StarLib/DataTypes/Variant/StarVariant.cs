@@ -30,6 +30,6 @@ namespace StarLib.DataTypes.Variant
 	public class StarVariant
 	{
 		[StarSerialize(0)]
-		public Any<double, bool, StarString, StarArray, StarStringMap> Json { get; set; }
+		public Any<double, bool, StarString, StarVariantArray, StarStringMap> Json { get; set; }
 	}
 }

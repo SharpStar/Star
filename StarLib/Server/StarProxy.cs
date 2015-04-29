@@ -168,11 +168,12 @@ namespace StarLib.Server
 			{
 				Close();
 
-				if (ConnectionClosed != null && !ClientConnection.Connected && !ServerConnection.Connected)
+				if (ConnectionClosed != null && ClientConnection != null && ServerConnection != null && !ClientConnection.Connected && !ServerConnection.Connected)
 				{
 					Interlocked.CompareExchange(ref _running, 0, 1);
 
-					ConnectionClosed(this, new ProxyConnectionEventArgs(this));
+					if (ConnectionClosed != null)
+						ConnectionClosed(this, new ProxyConnectionEventArgs(this));
 				}
 			}
 		}

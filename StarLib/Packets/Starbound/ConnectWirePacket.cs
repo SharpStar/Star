@@ -20,30 +20,30 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-    class ConnectWirePacket : Packet
-    {
-        public override byte PacketId
-        {
-            get
-            {
-                return (byte)PacketType.ConnectWire;
-            }
-            protected set
-            {
-                throw new NotImplementedException();
-            }
-        }
+    //public class ConnectWirePacket : Packet
+    //{
+    //    public override byte PacketId
+    //    {
+    //        get
+    //        {
+    //            return (byte)PacketType.ConnectWire;
+    //        }
+    //        protected set
+    //        {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
 
-        [StarSerialize(0)]
-        public Vec2I OutputObjectLocation { get; set; }
+    //    [StarSerialize(0)]
+    //    public Vec2I OutputObjectLocation { get; set; }
 
-        [StarSerialize(1)]
-        public Vec2I OutputConnectorLocation { get; set; }
+    //    [StarSerialize(1)]
+    //    public Vec2I OutputConnectorLocation { get; set; }
 
-        [StarSerialize(2)]
-        public Vec2I InputObjectLocation { get; set; }
+    //    [StarSerialize(2)]
+    //    public Vec2I InputObjectLocation { get; set; }
 
-        [StarSerialize(3)]
-        public Vec2I InputConnectorLocation { get; set; }
-    }
+    //    [StarSerialize(3)]
+    //    public Vec2I InputConnectorLocation { get; set; }
+    //}
 }

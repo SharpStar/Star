@@ -207,6 +207,9 @@ namespace StarLib.Packets.Serialization
 
 			var expressions = new List<Expression>();
 
+			if (IsMaybeType(instance))
+				expressions.Add(WriteMaybeType(instance, dest));
+
 			bool skipOne = false;
 			for (int i = 0; i < members.Count; i++)
 			{
@@ -221,12 +224,15 @@ namespace StarLib.Packets.Serialization
 				if (IsConditional(member) && member.Type == typeof(bool))
 				{
 					var write = Expression.Variable(typeof(bool), "write");
+					var serialize = typeof(PacketSerializer).GetMethod("Serialize", new[] { typeof(object), typeof(StarWriter) });
 
 					var newExpr = Expression.Block(new[] { write },
-							WriteOne(dest, member, type, members[i].Item2),
+							Expression.Invoke(Expression.Constant(_serializables[typeof(bool)].Serializer), dest, member),
+							//WriteOne(dest, member, type, members[i].Item2),
 							Expression.Assign(write, member),
 							Expression.IfThen(Expression.Equal(write, Expression.Constant(true)),
-								WriteOne(dest, Expression.Property(instance, members[i + 1].Item1), type, members[i + 1].Item2)
+								Expression.Call(serialize, Expression.Property(instance, members[i + 1].Item1), dest)
+							//WriteOne(dest, Expression.Property(instance, members[i + 1].Item1), type, members[i + 1].Item2)
 							)
 						);
 
@@ -240,14 +246,14 @@ namespace StarLib.Packets.Serialization
 
 					expressions.Add(write);
 				}
-				//else if (IsMaybeType(member))
-				//{
-				//	expressions.Add(WriteMaybeType(member, dest));
-				//}
-				else if (IsEitherType(member))
+				else if (IsMaybeType(member))
 				{
-					expressions.Add(WriteEitherType(member, dest));
+					expressions.Add(WriteMaybeType(member, dest));
 				}
+				//else if (IsEitherType(member))
+				//{
+				//	expressions.Add(WriteEitherType(member, dest));
+				//}
 				else
 				{
 					var write = WriteOne(dest, member, member.Type, members[i].Item2);
@@ -258,66 +264,70 @@ namespace StarLib.Packets.Serialization
 			}
 
 			return expressions.Any() ? Expression.Block(expressions) : Expression.Block(Expression.Empty());
-			//return Expression.Block(GetMembers(instance)
-			//    .Select(member => WriteOne(dest, member)));
 		}
 
-		static BlockExpression WriteEitherType(MemberExpression member, Expression dest)
-		{
-			var eitherIndex = member.Type.GetProperty("Index");
-			var eitherLeft = member.Type.GetProperty("Left");
-			var eitherRight = member.Type.GetProperty("Right");
+		//TODO: FIX ME
+		//static BlockExpression WriteEitherType(MemberExpression member, Expression dest)
+		//{
+		//	var eitherIndex = member.Type.GetProperty("Index");
+		//	var eitherLeft = member.Type.GetProperty("Left");
+		//	var eitherRight = member.Type.GetProperty("Right");
 
-			var eitherTypes = member.Type.GetGenericArguments();
-			var leftType = eitherTypes[0];
-			var rightType = eitherTypes[1];
+		//	var eitherTypes = member.Type.GetGenericArguments();
+		//	var leftType = eitherTypes[0];
+		//	var rightType = eitherTypes[1];
 
-			var leftMaybeType = typeof(Maybe<>).MakeGenericType(leftType);
-			var rightMaybeType = typeof(Maybe<>).MakeGenericType(rightType);
+		//	var leftMaybeType = typeof(Maybe<>).MakeGenericType(leftType);
+		//	var rightMaybeType = typeof(Maybe<>).MakeGenericType(rightType);
 
-			var left = Expression.Variable(leftMaybeType, "left");
-			var right = Expression.Variable(rightMaybeType, "right");
+		//	var left = Expression.Variable(leftMaybeType, "left");
+		//	var right = Expression.Variable(rightMaybeType, "right");
 
-			var maybeLeftVal = leftMaybeType.GetProperty("Value");
-			var maybeRightVal = rightMaybeType.GetProperty("Value");
+		//	var maybeLeftVal = leftMaybeType.GetProperty("Value");
+		//	var maybeRightVal = rightMaybeType.GetProperty("Value");
 
-			var newExpr = Expression.Block(new[] { left, right },
-				Expression.Assign(left, Expression.Property(member, eitherLeft)),
-				Expression.Assign(right, Expression.Property(member, eitherRight)),
-				Expression.IfThenElse(
-					Expression.NotEqual(Expression.Property(left, maybeLeftVal), Expression.Constant(null)),
-					Expression.Block(
-						Expression.Assign(Expression.Property(member, eitherIndex), Expression.Constant((byte)1)),
-						WriteOne(dest, Expression.Property(member, eitherIndex), typeof(byte), null),
-						WriteMaybeType(Expression.Property(member, eitherLeft), dest)
-					),
-					Expression.IfThenElse(
-						Expression.NotEqual(Expression.Property(right, maybeRightVal), Expression.Constant(null)),
-						Expression.Block(
-							Expression.Assign(Expression.Property(member, eitherIndex), Expression.Constant((byte)2)),
-							WriteOne(dest, Expression.Property(member, eitherIndex), typeof(byte), null),
-							WriteMaybeType(Expression.Property(member, eitherRight), dest)
-						),
-						Expression.Block(
-							Expression.Assign(Expression.Property(member, eitherIndex), Expression.Constant((byte)0)),
-							WriteOne(dest, Expression.Property(member, eitherIndex), typeof(byte), null)
-						)
-					)
-				)
-			);
+		//	var newExpr = Expression.Block(new[] { left, right },
+		//		Expression.Assign(left, Expression.Property(member, eitherLeft)),
+		//		Expression.Assign(right, Expression.Property(member, eitherRight)),
+		//		Expression.IfThenElse(
+		//			Expression.NotEqual(Expression.Property(left, maybeLeftVal), Expression.Constant(null)),
+		//			Expression.Block(
+		//				Expression.Assign(Expression.Property(member, eitherIndex), Expression.Constant((byte)1)),
+		//				WriteOne(dest, Expression.Property(member, eitherIndex), typeof(byte), null),
+		//				WriteMaybeType(Expression.Property(member, eitherLeft), dest)
+		//			),
+		//			Expression.IfThenElse(
+		//				Expression.NotEqual(Expression.Property(right, maybeRightVal), Expression.Constant(null)),
+		//				Expression.Block(
+		//					Expression.Assign(Expression.Property(member, eitherIndex), Expression.Constant((byte)2)),
+		//					WriteOne(dest, Expression.Property(member, eitherIndex), typeof(byte), null),
+		//					WriteMaybeType(Expression.Property(member, eitherRight), dest)
+		//				),
+		//				Expression.Block(
+		//					Expression.Assign(Expression.Property(member, eitherIndex), Expression.Constant((byte)0)),
+		//					WriteOne(dest, Expression.Property(member, eitherIndex), typeof(byte), null)
+		//				)
+		//			)
+		//		)
+		//	);
 
-			return newExpr;
-		}
+		//	return newExpr;
+		//}
 
-		static BlockExpression WriteMaybeType(MemberExpression member, Expression dest)
+		static BlockExpression WriteMaybeType(Expression member, Expression dest)
 		{
 			var maybeValueProp = member.Type.GetProperty("Value");
-
-			Type maybeType = member.Type.GetGenericArguments()[0];
+			var valueType = member.Type.GetGenericArguments().First();
+			var serializer = typeof(PacketSerializer).GetMethod("Serialize", new[] { typeof(object), typeof(StarWriter) });
 
 			var newExpr = Expression.Block(
-				Expression.IfThen(Expression.NotEqual(Expression.Property(member, maybeValueProp), Expression.Constant(null)),
-					WriteOne(dest, Expression.Property(member, maybeValueProp), maybeType, null)
+				Expression.IfThenElse(Expression.NotEqual(Expression.Property(member, maybeValueProp), Expression.Constant(null)),
+				Expression.Block(
+						Expression.Invoke(Expression.Constant(_serializables[typeof(byte)].Serializer), dest, Expression.Constant((byte)1)),
+						WriteOne(dest, Expression.Property(member, maybeValueProp), valueType, null)
+					//Expression.Call(serializer, Expression.Property(member, maybeValueProp), dest)
+					),
+					Expression.Invoke(Expression.Constant(_serializables[typeof(byte)].Serializer), dest, Expression.Constant((byte)0))
 				)
 			);
 
@@ -372,11 +382,14 @@ namespace StarLib.Packets.Serialization
 
 		static BlockExpression ReadFromBuffer(Expression instance, Expression stream)
 		{
-			var members = GetMembers(instance.Type).ToArray();
+			var members = GetMembers(instance.Type).ToList();
 			var expressions = new List<Expression>();
 
+			if (IsMaybeType(instance))
+				expressions.Add(ReadMaybeType(instance, stream, null));
+
 			bool skipOne = false;
-			for (int i = 0; i < members.Length; i++)
+			for (int i = 0; i < members.Count; i++)
 			{
 				if (skipOne)
 				{
@@ -392,7 +405,7 @@ namespace StarLib.Packets.Serialization
 					var next = Expression.Property(instance, members[i + 1].Item1);
 
 					var newExpr = Expression.Block(new[] { read },
-					Expression.Assign(read, ReadOne(stream, member, member.Type, members[i].Item2)),
+					Expression.Assign(read, Expression.Invoke(Expression.Constant(_serializables[typeof(bool)].Deserializer), stream)),
 						Expression.IfThen(
 							Expression.Equal(read, Expression.Constant(true)),
 								ReadOne(stream, Expression.Property(instance, members[i + 1].Item1), next.Type, members[i + 1].Item2)
@@ -407,10 +420,14 @@ namespace StarLib.Packets.Serialization
 				{
 					expressions.Add(ReadAnyType(member, stream, members[i].Item2));
 				}
-				else if (IsEitherType(member))
+				else if (IsMaybeType(member))
 				{
-					expressions.Add(ReadEitherType(member, stream, members[i].Item2));
+					expressions.Add(ReadMaybeType(member, stream, members[i].Item2));
 				}
+				//else if (IsEitherType(member))
+				//{
+				//	expressions.Add(ReadEitherType(member, stream, members[i].Item2));
+				//}
 				else
 				{
 					expressions.Add(ReadOne(stream, member, member.Type, members[i].Item2));
@@ -418,40 +435,49 @@ namespace StarLib.Packets.Serialization
 			}
 
 			return expressions.Any() ? Expression.Block(expressions) : Expression.Block(Expression.Empty());
-			//return Expression.Block(GetMembers(instance)
-			//    .Select(member => ReadOne(stream, member)));
 		}
 
-		static BlockExpression ReadMaybeType(MemberExpression member, Expression stream, StarSerializeAttribute attrib)
+		static BlockExpression ReadMaybeType(Expression member, Expression stream, StarSerializeAttribute attrib)
 		{
-			var maybe = Expression.Variable(member.Type, "type");
+			var maybeType = member.Type.GetGenericArguments().First();
 
-			var newExpr = Expression.Block(new[] { maybe },
-				Expression.Assign(maybe, ReadOne(stream, member, member.Type, attrib)),
+			var hasAny = Expression.Variable(typeof(byte), "hasAny");
+			var valueProp = member.Type.GetProperty("Value");
+
+			var newExpr = Expression.Block(new[] { hasAny },
+				Expression.Assign(member, Expression.New(member.Type)),
+				Expression.Assign(hasAny, Expression.Invoke(Expression.Constant(_serializables[typeof(byte)].Deserializer), stream)),
+				Expression.IfThen(Expression.Equal(hasAny, Expression.Constant((byte)1)),
+					ReadOne(stream, Expression.Property(member, valueProp), maybeType, null)
+				),
 				member
 			);
 
 			return newExpr;
 		}
 
-		static BlockExpression ReadEitherType(MemberExpression member, Expression stream, StarSerializeAttribute attrib)
-		{
-			var eitherLeft = member.Type.GetProperty("Left");
-			var eitherRight = member.Type.GetProperty("Right");
-			var eitherIndex = member.Type.GetProperty("Index");
+		//TODO: FIX ME
+		//static BlockExpression ReadEitherType(MemberExpression member, Expression stream, StarSerializeAttribute attrib)
+		//{
+		//	Type[] eitherTypes = member.Type.GetGenericArguments();
 
-			var newExpr = Expression.Block(
-				ReadOne(stream, member, member.Type, null),
-				Expression.IfThen(Expression.Equal(Expression.Property(member, eitherIndex), Expression.Constant((byte)1)),
-					ReadMaybeType(Expression.Property(member, eitherLeft), stream, null)
-				),
-				Expression.IfThen(Expression.Equal(Expression.Property(member, eitherIndex), Expression.Constant((byte)2)),
-					ReadMaybeType(Expression.Property(member, eitherRight), stream, null)
-				)
-			);
+		//	Type leftType = eitherTypes.First();
+		//	Type maybeLeftType = typeof(Maybe<>).MakeGenericType(leftType);
 
-			return newExpr;
-		}
+		//	var maybeLeft = Expression.Variable(maybeLeftType, "maybe");
+		//	var maybeVal = maybeLeftType.GetProperty("Value");
+		//	var eitherLeft = member.Type.GetProperty("Left");
+		//	var eitherRight = member.Type.GetProperty("Right");
+
+		//	var newExpr = Expression.Block(new[] { maybeLeft },
+		//		ReadMaybeType(Expression.Property(member, eitherLeft), stream, null),
+		//			//Expression.IfThen(Expression.Equal(Expression.Property(maybeLeft, maybeVal), Expression.Constant(null)),
+		//			ReadMaybeType(Expression.Property(member, eitherRight), stream, null)
+		//	//)
+		//	);
+
+		//	return newExpr;
+		//}
 
 		static BlockExpression ReadAnyType(MemberExpression member, Expression stream, StarSerializeAttribute attrib)
 		{
@@ -502,10 +528,7 @@ namespace StarLib.Packets.Serialization
 					: BuildSerializer(valType)
 					: GetSerializableType(valType).Serializer;
 
-					if (valFunc == null)
-						return Expression.Empty();
-
-					return GetDictionaryWriter(stream, source, kvTypes[0], valType, func, valFunc);
+					return GetDictionaryWriter(stream, source, type, valType, func, valFunc);
 				}
 
 				var funcType = GetFuncType(func); //We need to downcast the member because of contravariance with enums or Complex type boxing.
@@ -531,9 +554,6 @@ namespace StarLib.Packets.Serialization
 				: BuildDeserializer(type)
 				: GetSerializableType(type).Deserializer;
 
-			//if (func == null)
-			//	return Expression.Block(Expression.Empty());
-
 			var reader = Expression.Convert(Expression.Invoke(Expression.Constant(func), stream), type) as Expression;
 
 			if (IsList(destType))
@@ -551,12 +571,9 @@ namespace StarLib.Packets.Serialization
 				: BuildDeserializer(valType)
 				: GetSerializableType(valType).Deserializer;
 
-				//if (valFunc == null)
-				//	return Expression.Block(Expression.Empty());
-
 				var valReader = Expression.Convert(Expression.Invoke(Expression.Constant(valFunc), stream), valType) as Expression;
 
-				return Expression.Assign(dest, GetDictionaryReader(stream, reader, valReader, kvTypes[0], valType));
+				return Expression.Assign(dest, GetDictionaryReader(stream, reader, valReader, type, valType));
 			}
 
 			return Expression.Assign(dest, toObj ? Expression.Convert(reader, typeof(object)) : reader);
@@ -569,7 +586,7 @@ namespace StarLib.Packets.Serialization
 			var listLength = GetListCount(member, genericType);
 			var currentItem = Expression.Property(member, "Item", counter);
 			var block = Expression.Block(new[] { counter },
-				WriteLengthIfNotGreedy(stream, member, listLength, serializeAttrib.Length),
+				WriteLengthIfNotGreedy(stream, member, listLength, serializeAttrib != null ? serializeAttrib.Length : 0),
 				Expression.Loop(
 					Expression.IfThenElse(Expression.LessThan(counter, listLength),
 						Expression.Block(
@@ -631,6 +648,8 @@ namespace StarLib.Packets.Serialization
 		{
 			var length = Expression.Variable(typeof(int), "length");
 			var dictType = typeof(Dictionary<,>).MakeGenericType(keyType, valType);
+			var dictAdd = dictType.GetMethod("Add", new[] { keyType, valType });
+
 			var dict = Expression.Variable(dictType, "dict");
 			var exit = Expression.Label();
 			var block = Expression.Block(new[] { length, dict },
@@ -638,9 +657,7 @@ namespace StarLib.Packets.Serialization
 				Expression.Assign(length, Expression.Invoke(_collectionLengthReaderExpr, stream)),
 				Expression.Loop(
 					Expression.IfThenElse(Expression.LessThan(GetDictionaryCount(dict, keyType, valType), length),
-						Expression.Block(
-							Expression.Call(dict, "Add", null, keyReader, valueReader)
-						),
+							Expression.Call(dict, dictAdd, keyReader, valueReader),
 						Expression.Break(exit)),
 					exit),
 			dict);

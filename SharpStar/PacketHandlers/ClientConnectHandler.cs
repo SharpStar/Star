@@ -40,7 +40,7 @@ namespace SharpStar.PacketHandlers
 
 			plr.Name = packet.PlayerName;
 			plr.Uuid = packet.Uuid;
-			
+
 			if (!string.IsNullOrEmpty(packet.Account) && Program.Configuration.EnableSharpAccounts)
 			{
 				Account account = StarMain.Instance.Database.GetAccountByUsername(packet.Account);

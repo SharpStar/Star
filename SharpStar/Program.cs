@@ -272,7 +272,7 @@ namespace SharpStar
 				new ClientDisconnectRequestHandler(),
 				new ChatSendHandler(),
 				new PlayerWarpResultHandler(),
-				new CelestialRequestHandler(),
+				//new CelestialRequestHandler(),
 				//new GiveItemHandler()
 			};
 		}

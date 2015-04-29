@@ -25,8 +25,8 @@ namespace StarLib.Packets
 {
 	public class Either
 	{
-		[StarSerialize(0)]
-		public byte Index { get; set; }
+		//[StarSerialize(0)]
+		//public byte Index { get; set; }
 	}
 
 	public class Either<T1, T2> : Either
