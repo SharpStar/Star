@@ -20,25 +20,25 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-    class DisconnectAllWiresPacket : Packet
-    {
-        public override byte PacketId
-        {
-            get
-            {
-                return (byte)PacketType.DisconnectAllWires;
-            }
-            protected set
-            {
-                throw new NotImplementedException();
-            }
-        }
+    //public class DisconnectAllWiresPacket : Packet
+    //{
+    //    public override byte PacketId
+    //    {
+    //        get
+    //        {
+    //            return (byte)PacketType.DisconnectAllWires;
+    //        }
+    //        protected set
+    //        {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
 
 
-        [StarSerialize(0)]
-        public Vec2I ObjectLocation { get; set; }
+    //    [StarSerialize(0)]
+    //    public Vec2I ObjectLocation { get; set; }
 
-        [StarSerialize(1)]
-        public Vec2I ConnectorLocation { get; set; }
-    }
+    //    [StarSerialize(1)]
+    //    public Vec2I ConnectorLocation { get; set; }
+    //}
 }

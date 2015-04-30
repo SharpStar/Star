@@ -43,250 +43,264 @@ using StarLib.Server;
 
 namespace SharpStar
 {
-	class Program
-	{
-		private static readonly StarLog Log = StarLog.DefaultLogger;
+    class Program
+    {
+        private static readonly StarLog Log = StarLog.DefaultLogger;
 
-		private static readonly Version SharpStarVersion = Assembly.GetExecutingAssembly().GetName().Version;
-		private static readonly Version StarVersion = typeof(StarMain).Assembly.GetName().Version;
+        private static readonly Version SharpStarVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        private static readonly Version StarVersion = typeof(StarMain).Assembly.GetName().Version;
 
-		private static readonly Lazy<ConsoleCommand[]> _createConsoleCommands = new Lazy<ConsoleCommand[]>(CreateConsoleCommands);
-		private static readonly Lazy<PlayerEventCommand[]> _createPlayerCommands = new Lazy<PlayerEventCommand[]>(CreatePlayerCommands);
-		private static readonly Lazy<IPacketHandler[]> _createPacketHandlers = new Lazy<IPacketHandler[]>(CreatePacketHandlers);
+        private static readonly Lazy<ConsoleCommand[]> _createConsoleCommands = new Lazy<ConsoleCommand[]>(CreateConsoleCommands);
+        private static readonly Lazy<PlayerEventCommand[]> _createPlayerCommands = new Lazy<PlayerEventCommand[]>(CreatePlayerCommands);
+        private static readonly Lazy<IPacketHandler[]> _createPacketHandlers = new Lazy<IPacketHandler[]>(CreatePacketHandlers);
 
-		private static bool _shutdown;
+        private static bool _shutdown;
 
-		private static JsonFileConfiguration<SharpConfig> _configFile;
+        private static JsonFileConfiguration<SharpConfig> _configFile;
 
-		public static SharpConfig Configuration
-		{
-			get
-			{
-				return _configFile.Config;
-			}
-		}
+        public static SharpConfig Configuration
+        {
+            get
+            {
+                return _configFile.Config;
+            }
+        }
 
-		public static ConsoleCommand[] ConsoleCommandsToAdd
-		{
-			get
-			{
-				return _createConsoleCommands.Value;
-			}
-		}
+        public static ConsoleCommand[] ConsoleCommandsToAdd
+        {
+            get
+            {
+                return _createConsoleCommands.Value;
+            }
+        }
 
-		public static IPacketHandler[] HandlersToAdd
-		{
-			get
-			{
-				return _createPacketHandlers.Value;
-			}
-		}
+        public static IPacketHandler[] HandlersToAdd
+        {
+            get
+            {
+                return _createPacketHandlers.Value;
+            }
+        }
 
-		public static PlayerEventCommand[] PlayerCommands
-		{
-			get
-			{
-				return _createPlayerCommands.Value;
-			}
-		}
+        public static PlayerEventCommand[] PlayerCommands
+        {
+            get
+            {
+                return _createPlayerCommands.Value;
+            }
+        }
 
-		static void Main(string[] args)
-		{
-			XmlConfigurator.Configure();
-			AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-			TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+        static void Main(string[] args)
+        {
+            XmlConfigurator.Configure();
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
-			_configFile = new JsonFileConfiguration<SharpConfig>("sharpconfig.json", new JsonSerializerSettings());
-			_configFile.Load();
+            _configFile = new JsonFileConfiguration<SharpConfig>("sharpconfig.json", new JsonSerializerSettings());
+            _configFile.Load();
 
-			Run();
+            Run();
 
-			if (StarMain.Instance.ServerConfig.RunAsService)
-			{
-				if (MonoHelper.IsRunningOnMono)
-				{
-					StarLog.DefaultLogger.Info("You are currently running Mono version {0}", MonoHelper.GetMonoVersion());
+            if (StarMain.Instance.ServerConfig.RunAsService)
+            {
+                if (MonoHelper.IsRunningOnMono)
+                {
+                    StarLog.DefaultLogger.Info("You are currently running Mono version {0}", MonoHelper.GetMonoVersion());
 
-					WaitForUnixExit();
-				}
+                    WaitForUnixExit();
+                }
 
-				ServiceBase.Run(new StarService());
+                ServiceBase.Run(new StarService());
 
-				return;
-			}
+                return;
+            }
 
-			Console.CancelKeyPress += Console_CancelKeyPress;
-			Console.SetError(TextWriter.Null);
+            Console.CancelKeyPress += Console_CancelKeyPress;
+            Console.SetError(TextWriter.Null);
 
-			if (MonoHelper.IsRunningOnMono)
-			{
-				StarLog.DefaultLogger.Info("You are currently running Mono version {0}", MonoHelper.GetMonoVersion());
+            if (MonoHelper.IsRunningOnMono)
+            {
+                StarLog.DefaultLogger.Info("You are currently running Mono version {0}", MonoHelper.GetMonoVersion());
 
-				WaitForUnixExit();
-			}
-			else
-			{
-				NativeMethods.SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
-			}
+                WaitForUnixExit();
+            }
+            else
+            {
+                NativeMethods.SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
+            }
 
-			while (true)
-			{
-				string input = Console.ReadLine();
+            while (true)
+            {
+                try
+                {
+                    string input = Console.ReadLine();
 
-				if (input != null)
-				{
-					if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
-						Shutdown();
+                    if (input != null)
+                    {
+                        if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
+                            Shutdown();
 
-					StarMain.Instance.ConsoleCommandManager.TryPassConsoleCommand(input);
-				}
-			}
-		}
+                        StarMain.Instance.ConsoleCommandManager.TryPassConsoleCommand(input);
+                    }
+                }
+                catch
+                {
+                }
+            }
+        }
 
-		public static void Run()
-		{
-			Log.Info("SharpStar Version {0}.{1}.{2}.{3}", SharpStarVersion.Major, SharpStarVersion.Minor, SharpStarVersion.Build, SharpStarVersion.Revision);
-			Log.Info("Star Version {0}.{1}.{2}.{3}", StarVersion.Major, StarVersion.Minor, StarVersion.Build, StarVersion.Revision);
+        public static void Run()
+        {
+            Log.Info("SharpStar Version {0}.{1}.{2}.{3}", SharpStarVersion.Major, SharpStarVersion.Minor, SharpStarVersion.Build, SharpStarVersion.Revision);
+            Log.Info("Star Version {0}.{1}.{2}.{3}", StarVersion.Major, StarVersion.Minor, StarVersion.Build, StarVersion.Revision);
 
-			StarClientManager scm = new StarClientManager();
-			scm.StartWatchingProxies();
+            Thread starThread = new Thread(() =>
+            {
+                StarClientManager scm = new StarClientManager();
+                scm.StartWatchingProxies();
 
-			SetupStar();
-		}
+                SetupStar();
+            });
 
-		private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
-		{
-			Shutdown();
-		}
+            starThread.Name = "Star";
 
-		private static void SetupStar()
-		{
-			StarMain.Instance.CurrentLocalization = new SimpleLocalizationFile("english.l10n");
-			StarMain.Instance.Init();
+            starThread.Start();
+        }
 
-			StarMain.Instance.ShutdownInitiated += ShutdownInitiated;
-			StarMain.Instance.ConsoleCommandManager.AddCommands(ConsoleCommandsToAdd);
-			StarMain.Instance.Server.AddPacketHandlers(HandlersToAdd);
+        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        {
+            Shutdown();
+        }
 
-			StarMain.Instance.Start();
-		}
+        private static void SetupStar()
+        {
+            StarMain.Instance.CurrentLocalization = new SimpleLocalizationFile("english.l10n");
+            StarMain.Instance.Init();
 
-		private static void ShutdownInitiated(object sender, EventArgs e)
-		{
-			Log.Info("Kicking all players...");
+            StarMain.Instance.ShutdownInitiated += ShutdownInitiated;
+            StarMain.Instance.ConsoleCommandManager.AddCommands(ConsoleCommandsToAdd);
+            StarMain.Instance.Server.AddPacketHandlers(HandlersToAdd);
 
-			foreach (StarProxy proxy in StarMain.Instance.Server.Proxies)
-			{
-				proxy.Kick(StarMain.Instance.CurrentLocalization["Shutdown"]);
-			}
-		}
+            StarMain.Instance.Start();
+        }
 
-		private static bool ConsoleCtrlCheck(CtrlTypes ctrlType)
-		{
-			Shutdown();
+        private static void ShutdownInitiated(object sender, EventArgs e)
+        {
+            Log.Info("Kicking all players...");
 
-			return true;
-		}
+            foreach (StarProxy proxy in StarMain.Instance.Server.Proxies)
+            {
+                proxy.Kick(StarMain.Instance.CurrentLocalization["Shutdown"]);
+            }
+        }
 
-		private static void WaitForUnixExit()
-		{
-			UnixSignal[] signals =
-			{
-				new UnixSignal (Signum.SIGINT),
-				new UnixSignal (Signum.SIGTERM)
-			};
+        private static bool ConsoleCtrlCheck(CtrlTypes ctrlType)
+        {
+            Shutdown();
 
-			new Thread(() =>
-			{
-				UnixSignal.WaitAny(signals, -1);
+            return true;
+        }
 
-				Shutdown();
-			}).Start();
-		}
+        private static void WaitForUnixExit()
+        {
+            UnixSignal[] signals =
+            {
+                new UnixSignal (Signum.SIGINT),
+                new UnixSignal (Signum.SIGTERM)
+            };
 
-		public static void Shutdown(bool exit = true)
-		{
-			if (_shutdown)
-				return;
+            new Thread(() =>
+            {
+                UnixSignal.WaitAny(signals, -1);
 
-			_shutdown = true;
+                Shutdown();
+            }).Start();
+        }
 
-			Log.Info("Shutting down...");
+        public static void Shutdown(bool exit = true)
+        {
+            if (_shutdown)
+                return;
 
-			string reason = StarMain.Instance.CurrentLocalization["Shutdown"];
+            _shutdown = true;
 
-			if (!string.IsNullOrEmpty(reason))
-			{
-				foreach (StarProxy proxy in StarMain.Instance.Server.Proxies)
-				{
-					proxy.Kick(reason);
-				}
-			}
+            Log.Info("Shutting down...");
 
-			StarMain.Instance.Shutdown();
+            string reason = StarMain.Instance.CurrentLocalization["Shutdown"];
 
-			if (exit)
-				Environment.Exit(0);
-		}
+            if (!string.IsNullOrEmpty(reason))
+            {
+                foreach (StarProxy proxy in StarMain.Instance.Server.Proxies)
+                {
+                    proxy.Kick(reason);
+                }
+            }
 
-		private static void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
-		{
-			e.SetObserved();
-			e.Exception.LogError();
-		}
+            StarMain.Instance.Shutdown();
 
-		private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
-		{
-			((Exception)e.ExceptionObject).LogError();
+            if (exit)
+                Environment.Exit(0);
+        }
 
-			if (e.IsTerminating)
-				Shutdown();
-		}
+        private static void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            e.SetObserved();
+            e.Exception.LogError();
+        }
 
-		private static ConsoleCommand[] CreateConsoleCommands()
-		{
-			return new ConsoleCommand[]
-			{
-				new HelpCommand(),
-				new KickAllCommand(),
-				new ListPlayersCommand(),
-				new ListCommand(),
-				new ReloadConfigsCommand(),
-				new UuidOfCommand()
-			};
-		}
+        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            ((Exception)e.ExceptionObject).LogError();
 
-		private static IPacketHandler[] CreatePacketHandlers()
-		{
-			return new IPacketHandler[]
-			{
-				new AllPacketsHandler(),
-				new ClientConnectHandler(),
-				new ServerDisconnectHandler(),
-				new ChatReceivePacketHandler(),
-				new HandshakeChallengeHandler(),
-				new HandshakeResponseHandler(),
-				new ConnectSuccessHandler(),
-				new ConnectFailureHandler(),
-				new PlayerWarpHandler(),
-				new ClientDisconnectRequestHandler(),
-				new ChatSendHandler(),
-				new PlayerWarpResultHandler(),
-				//new CelestialRequestHandler(),
-				//new GiveItemHandler()
-			};
-		}
+            if (e.IsTerminating)
+                Shutdown();
+        }
 
-		private static PlayerEventCommand[] CreatePlayerCommands()
-		{
-			return new PlayerEventCommand[]
-			{
-				new PlayerHelpCommand(),
-				new PlayerListCommand(),
-				new PlayerListPlayersCommand(),
-				new PlayerRegisterAccountCommand(),
-				new PlayerWarpToPlayerCommand()
-			};
-		}
-	}
+        private static ConsoleCommand[] CreateConsoleCommands()
+        {
+            return new ConsoleCommand[]
+            {
+                new HelpCommand(),
+                new KickAllCommand(),
+                new ListPlayersCommand(),
+                new ListCommand(),
+                new ReloadConfigsCommand(),
+                new UuidOfCommand(),
+                new BroadcastCommand()
+            };
+        }
+
+        private static IPacketHandler[] CreatePacketHandlers()
+        {
+            return new IPacketHandler[]
+            {
+                new AllPacketsHandler(),
+                new ClientConnectHandler(),
+                new ServerDisconnectHandler(),
+                new ChatReceivePacketHandler(),
+                new HandshakeChallengeHandler(),
+                new HandshakeResponseHandler(),
+                new ConnectSuccessHandler(),
+                new ConnectFailureHandler(),
+                new PlayerWarpHandler(),
+                new ClientDisconnectRequestHandler(),
+                new ChatSendHandler(),
+                new PlayerWarpResultHandler(),
+                //new CelestialRequestHandler(),
+                //new GiveItemHandler()
+            };
+        }
+
+        private static PlayerEventCommand[] CreatePlayerCommands()
+        {
+            return new PlayerEventCommand[]
+            {
+                new PlayerHelpCommand(),
+                new PlayerListCommand(),
+                new PlayerListPlayersCommand(),
+                new PlayerRegisterAccountCommand(),
+                new PlayerWarpToPlayerCommand()
+            };
+        }
+    }
 }

@@ -19,17 +19,17 @@ using StarLib.Server;
 
 namespace StarLib.Events.Packets
 {
-	public class PacketEvent : StarEvent
-	{
-		public Packet Packet { get; protected set; }
+    public class PacketEvent : StarEvent
+    {
+        public Packet Packet { get; protected set; }
 
-		public StarProxy Proxy { get; protected set; }
+        public StarProxy Proxy { get; protected set; }
 
-		public PacketEvent(Packet packet, StarProxy proxy)
-		{
-			Packet = packet;
-			Proxy = proxy;
-		}
+        public PacketEvent(Packet packet, StarProxy proxy)
+        {
+            Packet = packet;
+            Proxy = proxy;
+        }
 
-	}
+    }
 }

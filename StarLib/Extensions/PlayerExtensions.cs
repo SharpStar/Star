@@ -28,36 +28,50 @@ using StarLib.Starbound.World;
 
 namespace StarLib.Extensions
 {
-	public static class PlayerExtensions
-	{
-		public static void WarpToPlayerShip(this Player player, Player otherPlayer)
-		{
-			player.Proxy.ServerConnection.SendPacket(new PlayerWarpPacket
-			{
-				Action = new Any<WarpToWorldAction, WarpToPlayerAction, WarpAliasAction>
-				{
-					Value = new WarpToWorldAction
-					{
-						WorldId = new Any<UniqueWorldId, CelestialWorldId, ClientShipWorldId, MissionWorldId>
-						{
-							Value = new ClientShipWorldId
-							{
-								Id = otherPlayer.Uuid
-							}
-						},
-						SpawnTarget = new SpawnTarget
-						{
-							Target = new Any<SpawnTargetUniqueEntity, SpawnTargetPosition>()
-						}
-					}
-				}
-			});
-		}
+    public static class PlayerExtensions
+    {
+        public static void WarpToPlayerShip(this Player player, Player otherPlayer)
+        {
+            player.Proxy.ServerConnection.SendPacket(new PlayerWarpPacket
+            {
+                Action = new Any<WarpToWorldAction, WarpToPlayerAction, WarpAliasAction>
+                {
+                    Value = new WarpToWorldAction
+                    {
+                        WorldId = new Any<UniqueWorldId, CelestialWorldId, ClientShipWorldId, MissionWorldId>
+                        {
+                            Value = new ClientShipWorldId
+                            {
+                                Id = otherPlayer.Uuid
+                            }
+                        },
+                        SpawnTarget = new SpawnTarget
+                        {
+                            Target = new Any<SpawnTargetUniqueEntity, SpawnTargetPosition>()
+                        }
+                    }
+                }
+            });
+        }
 
-		public static bool HasPermission(this Player player, string permission)
-		{
-			return player.Account.Permissions.Any(p => p.Name == permission && p.Allowed);
-		}
+        public static void WarpToPlayer(this Player player, Player otherPlayer)
+        {
+            player.Proxy.ServerConnection.SendPacket(new PlayerWarpPacket
+            {
+                Action = new Any<WarpToWorldAction, WarpToPlayerAction, WarpAliasAction>
+                {
+                    Value = new WarpToPlayerAction
+                    {
+                        Uuid = otherPlayer.Uuid
+                    }
+                }
+            });
+        }
 
-	}
+        public static bool HasPermission(this Player player, string permission)
+        {
+            return player.Account.Permissions.Any(p => p.Name == permission && p.Allowed);
+        }
+
+    }
 }

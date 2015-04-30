@@ -27,90 +27,90 @@ using StarLib.Starbound;
 
 namespace SharpStar.PlayerCommands
 {
-	public class PlayerWarpToPlayerCommand : PlayerEventCommand
-	{
-		public PlayerWarpToPlayerCommand() : base(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandName"] ?? "warpto")
-		{
-			Parts["{0}"] = p =>
-			{
-				Player fromPlr = p.Player;
-				var toProxies = StarMain.Instance.Server.Proxies.Where(x => x.Player != null &&
-								x.Player.NameWithoutColor.Equals(p.Arguments[0], StringComparison.OrdinalIgnoreCase)).OrderByDescending(x => x.ConnectionTime)
-								.ToList();
+    public class PlayerWarpToPlayerCommand : PlayerEventCommand
+    {
+        public PlayerWarpToPlayerCommand() : base(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandName"] ?? "warpto")
+        {
+            Parts["{0}"] = p =>
+            {
+                Player fromPlr = p.Player;
+                var toProxies = StarMain.Instance.Server.Proxies.Where(x => x.Player != null &&
+                                x.Player.NameWithoutColor.Equals(p.Arguments[0], StringComparison.OrdinalIgnoreCase)).OrderByDescending(x => x.ConnectionTime)
+                                .ToList();
 
-				if (toProxies.Count > 1)
-				{
-					fromPlr.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupNameMessage"]);
+                if (toProxies.Count > 1)
+                {
+                    fromPlr.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                        StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupNameMessage"]);
 
-					int ctr = 1;
-					foreach (StarProxy proxy in toProxies.Paged(0, 4))
-					{
-						fromPlr.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-							string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupNameFormat"],
-							ctr, proxy.Player.Name, proxy.Player.Uuid.Id));
+                    int ctr = 1;
+                    foreach (StarProxy proxy in toProxies.Paged(0, 4))
+                    {
+                        fromPlr.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                            string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupNameFormat"],
+                            ctr, proxy.Player.Name, proxy.Player.Uuid.Id));
 
-						ctr++;
-					}
-				}
-				else if (toProxies.Count == 1)
-				{
-					fromPlr.WarpToPlayerShip(toProxies.First().Player);
+                        ctr++;
+                    }
+                }
+                else if (toProxies.Count == 1)
+                {
+                    fromPlr.WarpToPlayer(toProxies.First().Player);
 
-					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies.First().Player.Name));
-				}
-				else
-				{
-					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandNotFoundMessage"], p.Arguments[0]));
-				}
-			};
+                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                        string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies.First().Player.Name));
+                }
+                else
+                {
+                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                        string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandNotFoundMessage"], p.Arguments[0]));
+                }
+            };
 
-			Parts["{0} {1}"] = p =>
-			{
-				int selection;
-				if (!int.TryParse(p.Arguments[1], out selection))
-				{
-					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupInvalidSel"]);
+            Parts["{0} {1}"] = p =>
+            {
+                int selection;
+                if (!int.TryParse(p.Arguments[1], out selection))
+                {
+                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                        StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupInvalidSel"]);
 
-					return;
-				}
+                    return;
+                }
 
-				selection--;
+                selection--;
 
-				Player fromPlr = p.Player;
-				var toProxies = StarMain.Instance.Server.Proxies.Where(x => x.Player != null &&
-								x.Player.NameWithoutColor.Equals(p.Arguments[0], StringComparison.OrdinalIgnoreCase)).OrderByDescending(x => x.ConnectionTime)
-								.ToList();
+                Player fromPlr = p.Player;
+                var toProxies = StarMain.Instance.Server.Proxies.Where(x => x.Player != null &&
+                                x.Player.NameWithoutColor.Equals(p.Arguments[0], StringComparison.OrdinalIgnoreCase)).OrderByDescending(x => x.ConnectionTime)
+                                .ToList();
 
-				if (toProxies.Count < selection)
-				{
-					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupInvalidSel"]);
+                if (toProxies.Count < selection)
+                {
+                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                        StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupInvalidSel"]);
 
-					return;
-				}
+                    return;
+                }
 
-				fromPlr.WarpToPlayerShip(toProxies[selection].Player);
+                fromPlr.WarpToPlayer(toProxies[selection].Player);
 
-				p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies[selection].Player.Name));
-			};
-		}
+                p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                        string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies[selection].Player.Name));
+            };
+        }
 
-		public override string Description
-		{
-			get
-			{
-				return StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDesc"];
-			}
-		}
+        public override string Description
+        {
+            get
+            {
+                return StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDesc"];
+            }
+        }
 
-		public override string GetHelp(string[] arguments)
-		{
-			return StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandHelp"];
-		}
-	}
+        public override string GetHelp(string[] arguments)
+        {
+            return StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandHelp"];
+        }
+    }
 }

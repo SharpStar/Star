@@ -19,21 +19,36 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FluentMigrator;
-using FluentMigrator.Runner;
-using FluentMigrator.Runner.Generators.SQLite;
-using FluentMigrator.Runner.Processors;
-using FluentMigrator.Runner.Processors.SQLite;
+using StarLib;
+using StarLib.Commands.Console;
+using StarLib.Extensions;
 
-namespace StarLib.Database.Mono
+namespace SharpStar.ConsoleCommands
 {
-    public class MonoSQLiteProcessorFactory : MigrationProcessorFactory
+    public class BroadcastCommand : ConsoleCommand
     {
-        public override IMigrationProcessor Create(string connectionString, IAnnouncer announcer, IMigrationProcessorOptions options)
+        public BroadcastCommand() : base(StarMain.Instance.CurrentLocalization["BroadcastCommandName"] ?? "broadcast")
         {
-            var factory = new MonoSqliteDbFactory();
-            var connection = factory.CreateConnection(connectionString);
-            return new SQLiteProcessor(connection, new SQLiteGenerator(), announcer, options, factory);
+            Parts["{0}"] = p =>
+            {
+                Parallel.ForEach(StarMain.Instance.Server.Proxies, proxy =>
+                {
+                    proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["BroadcastChatName"], p.Arguments[0]);
+                });
+            };
+        }
+
+        public override string Description
+        {
+            get
+            {
+                return StarMain.Instance.CurrentLocalization["BroadcastCommandDesc"];
+            }
+        }
+
+        public override string GetHelp(string[] arguments)
+        {
+            return StarMain.Instance.CurrentLocalization["BroadcastCommandHelp"];
         }
     }
 }

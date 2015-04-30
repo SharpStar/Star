@@ -23,31 +23,33 @@ using ServiceStack.DataAnnotations;
 
 namespace StarLib.Database.Models
 {
-	public class Account
-	{
-		[AutoIncrement]
-		public int Id { get; set; }
-		
-		public Guid InternalId { get; set; }
+    public class Account
+    {
+        [AutoIncrement]
+        public int Id { get; set; }
 
-		[Index(Unique = true)]
-		public string Username { get; set; }
+        public Guid InternalId { get; set; }
 
-		public string PasswordHash { get; set; }
+        [Index(Unique = true)]
+        public string Username { get; set; }
 
-		public string PasswordSalt { get; set; }
-		
-		[References(typeof(Group))]
-		public int? GroupId { get; set; }
+        public string PasswordHash { get; set; }
 
-		public DateTime? LastLogin { get; set; }
+        public string PasswordSalt { get; set; }
 
-		public bool IsAdmin { get; set; }
+        [References(typeof(Group))]
+        public int? GroupId { get; set; }
 
-		[Reference]
-		public List<Permission> Permissions { get; set; }
+        public DateTime? LastLogin { get; set; }
 
-		[Reference]
-		public List<Character> Characters { get; set; }
-	}
+        public bool IsAdmin { get; set; }
+
+        public bool Banned { get; set; }
+
+        [Reference]
+        public List<Permission> Permissions { get; set; }
+
+        [Reference]
+        public List<Character> Characters { get; set; }
+    }
 }

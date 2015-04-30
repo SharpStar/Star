@@ -36,6 +36,11 @@ UuidOfCommandHelp=Syntax: uuidof <player name>
 UuidOfCommandResponseFormat=Player {0}'s Uuid is {1}
 UuidOfCommandPlayerNotOnlineFormat=Player {0} is not online!
 
+BroadcastCommandName=broadcast
+BroadcastCommandDesc=Broadcasts a message to the entire server.
+BroadcastCommandHelp=Syntax: broadcast "<message>"
+BroadcastChatName=BROADCAST
+
 #Player Commands
 
 PlayerCommandChatName=Star

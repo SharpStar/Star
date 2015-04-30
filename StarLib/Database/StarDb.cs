@@ -27,230 +27,231 @@ using StarLib.Starbound;
 
 namespace StarLib.Database
 {
-	public sealed class StarDb : SqliteDb
-	{
-		public const string StarDbFileName = "star.db";
-		public const string DbDirectory = "databases";
+    public sealed class StarDb : SqliteDb
+    {
+        public const string StarDbFileName = "star.db";
+        public const string DbDirectory = "databases";
 
-		private static readonly string AssemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-		private static readonly string DbFileLocation = Path.Combine(AssemblyDir, DbDirectory, StarDbFileName);
+        private static readonly string AssemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        private static readonly string DbFileLocation = Path.Combine(AssemblyDir, DbDirectory, StarDbFileName);
 
-		private readonly DbMigrator _migrator;
+        private readonly DbMigrator _migrator;
 
-		public StarDb() : base(DbFileLocation)
-		{
-			_migrator = new DbMigrator(StarDbFileName);
+        public StarDb() : base(DbFileLocation)
+        {
+            _migrator = new DbMigrator(StarDbFileName);
 
-			CreateTables();
-			Migrate();
-		}
+            CreateTables();
+            Migrate();
+        }
 
-		public void Migrate()
-		{
-			_migrator.MigrateUp();
-		}
+        public void Migrate()
+        {
+            _migrator.MigrateUp();
+        }
 
-		public void CreateTables()
-		{
-			using (var conn = CreateConnection())
-			{
-				conn.CreateTableIfNotExists<Account>();
-				conn.CreateTableIfNotExists<Group>();
-				conn.CreateTableIfNotExists<Permission>();
-				conn.CreateTableIfNotExists<Character>();
-			}
-		}
+        public void CreateTables()
+        {
+            using (var conn = CreateConnection())
+            {
+                conn.CreateTableIfNotExists<Account>();
+                conn.CreateTableIfNotExists<Group>();
+                conn.CreateTableIfNotExists<Permission>();
+                conn.CreateTableIfNotExists<Character>();
+                conn.CreateTableIfNotExists<Ban>();
+            }
+        }
 
-		public bool CreateAccount(string username, string password, int? groupId = null)
-		{
-			using (var conn = CreateConnection())
-			{
-				if (conn.Count<Account>(p => p.Username.ToUpper() == username.ToUpper()) > 0)
-					return false;
+        public bool CreateAccount(string username, string password, int? groupId = null)
+        {
+            using (var conn = CreateConnection())
+            {
+                if (conn.Count<Account>(p => p.Username.ToUpper() == username.ToUpper()) > 0)
+                    return false;
 
-				string salt = StarSecurity.GenerateSecureString();
-				string hash = StarSecurity.GenerateHash(username, password, Encoding.UTF8.GetBytes(salt));
+                string salt = StarSecurity.GenerateSecureString();
+                string hash = StarSecurity.GenerateHash(username, password, Encoding.UTF8.GetBytes(salt));
 
-				Account account = new Account
-				{
-					Username = username,
-					InternalId = Guid.NewGuid(),
-					PasswordSalt = salt,
-					PasswordHash = hash,
-					GroupId = groupId
-				};
+                Account account = new Account
+                {
+                    Username = username,
+                    InternalId = Guid.NewGuid(),
+                    PasswordSalt = salt,
+                    PasswordHash = hash,
+                    GroupId = groupId
+                };
 
-				conn.Save(account);
-			}
+                conn.Save(account);
+            }
 
-			return true;
-		}
+            return true;
+        }
 
-		public Account GetAccount(int id)
-		{
-			using (var conn = CreateConnection())
-			{
-				return conn.LoadSingleById<Account>(id);
-			}
-		}
+        public Account GetAccount(int id)
+        {
+            using (var conn = CreateConnection())
+            {
+                return conn.LoadSingleById<Account>(id);
+            }
+        }
 
-		public Account GetAccountByUsername(string username)
-		{
-			using (var conn = CreateConnection())
-			{
-				return conn.Single<Account>(new
-				{
-					Username = username
-				});
-			}
-		}
+        public Account GetAccountByUsername(string username)
+        {
+            using (var conn = CreateConnection())
+            {
+                return conn.Single<Account>(new
+                {
+                    Username = username
+                });
+            }
+        }
 
-		public void SaveAccount(Account account)
-		{
-			using (var conn = CreateConnection())
-			{
-				conn.Save(account);
-			}
-		}
+        public void SaveAccount(Account account)
+        {
+            using (var conn = CreateConnection())
+            {
+                conn.Save(account);
+            }
+        }
 
-		public bool AddBan(Player player, bool includeAccount = true)
-		{
-			using (var conn = CreateConnection())
-			{
-				if (player.Account != null && includeAccount && conn.Count<Ban>(p => p.AccountId == player.Account.Id) > 0)
-					return false;
+        public bool AddBan(Player player, bool includeAccount = true)
+        {
+            using (var conn = CreateConnection())
+            {
+                if (player.Account != null && includeAccount && conn.Count<Ban>(p => p.AccountId == player.Account.Id) > 0)
+                    return false;
 
-				if (conn.Count<Ban>(p => p.Uuid == player.Uuid.Id) > 0)
-					return false;
+                if (conn.Count<Ban>(p => p.Uuid == player.Uuid.Id) > 0)
+                    return false;
 
-				conn.Save(new Ban
-				{
-					PlayerName = player.Name,
-					Uuid = player.Uuid.Id,
-					AccountId = (includeAccount && player.Account != null) ? player.Account.Id : (int?)null
-				});
-			}
+                conn.Save(new Ban
+                {
+                    PlayerName = player.Name,
+                    Uuid = player.Uuid.Id,
+                    AccountId = (includeAccount && player.Account != null) ? player.Account.Id : (int?)null
+                });
+            }
 
-			return true;
-		}
+            return true;
+        }
 
-		public bool RemoveBanByAccount(int accountId)
-		{
-			using (var conn = CreateConnection())
-			{
-				Ban ban = GetBanByAccount(accountId);
+        public bool RemoveBanByAccount(int accountId)
+        {
+            using (var conn = CreateConnection())
+            {
+                Ban ban = GetBanByAccount(accountId);
 
-				if (ban == null)
-					return false;
+                if (ban == null)
+                    return false;
 
-				conn.DeleteById<Ban>(ban.Id);
-			}
+                conn.DeleteById<Ban>(ban.Id);
+            }
 
-			return true;
-		}
+            return true;
+        }
 
-		public bool RemoveBanByUuid(string uuid)
-		{
-			using (var conn = CreateConnection())
-			{
-				Ban ban = GetBanByUuid(uuid);
+        public bool RemoveBanByUuid(string uuid)
+        {
+            using (var conn = CreateConnection())
+            {
+                Ban ban = GetBanByUuid(uuid);
 
-				if (ban == null)
-					return false;
+                if (ban == null)
+                    return false;
 
-				conn.DeleteById<Ban>(ban.Id);
-			}
+                conn.DeleteById<Ban>(ban.Id);
+            }
 
-			return true;
-		}
+            return true;
+        }
 
-		public Ban GetBanByAccount(int accountId)
-		{
-			using (var conn = CreateConnection())
-			{
-				return conn.Single<Ban>(new
-				{
-					AccountId = accountId
-				});
-			}
-		}
+        public Ban GetBanByAccount(int accountId)
+        {
+            using (var conn = CreateConnection())
+            {
+                return conn.Single<Ban>(new
+                {
+                    AccountId = accountId
+                });
+            }
+        }
 
-		public Ban GetBanByUuid(string uuid)
-		{
-			using (var conn = CreateConnection())
-			{
-				return conn.Single<Ban>(new
-				{
-					Uuid = uuid
-				});
-			}
-		}
+        public Ban GetBanByUuid(string uuid)
+        {
+            using (var conn = CreateConnection())
+            {
+                return conn.Single<Ban>(new
+                {
+                    Uuid = uuid
+                });
+            }
+        }
 
-		public bool CreateGroup(string name, bool isDefault = false)
-		{
-			using (var conn = CreateConnection())
-			{
-				if (conn.Count<Group>(p => p.Name.ToUpper() == name.ToUpper()) > 0)
-					return false;
+        public bool CreateGroup(string name, bool isDefault = false)
+        {
+            using (var conn = CreateConnection())
+            {
+                if (conn.Count<Group>(p => p.Name.ToUpper() == name.ToUpper()) > 0)
+                    return false;
 
-				if (isDefault)
-				{
-					var groups = conn.Where<Group>(new
-					{
-						IsDefault = true
-					});
+                if (isDefault)
+                {
+                    var groups = conn.Where<Group>(new
+                    {
+                        IsDefault = true
+                    });
 
-					groups.ForEach(p =>
-					{
-						p.IsDefault = false;
+                    groups.ForEach(p =>
+                    {
+                        p.IsDefault = false;
 
-						conn.Update(p);
-					});
-				}
+                        conn.Update(p);
+                    });
+                }
 
-				conn.Save(new Group
-				{
-					Name = name,
-					IsDefault = isDefault
-				});
-			}
+                conn.Save(new Group
+                {
+                    Name = name,
+                    IsDefault = isDefault
+                });
+            }
 
-			return true;
-		}
+            return true;
+        }
 
-		public Group GetGroup(int id)
-		{
-			using (var conn = CreateConnection())
-			{
-				return conn.SingleById<Group>(id);
-			}
-		}
+        public Group GetGroup(int id)
+        {
+            using (var conn = CreateConnection())
+            {
+                return conn.SingleById<Group>(id);
+            }
+        }
 
-		public Group GetGroupByName(string name)
-		{
-			using (var conn = CreateConnection())
-			{
-				return conn.Single<Group>(new
-				{
-					Name = name
-				});
-			}
-		}
+        public Group GetGroupByName(string name)
+        {
+            using (var conn = CreateConnection())
+            {
+                return conn.Single<Group>(new
+                {
+                    Name = name
+                });
+            }
+        }
 
-		public IList<Group> GetGroupsWithPermission(string permission)
-		{
-			using (var conn = CreateConnection())
-			{
-				return conn.Select(conn.From<Group>().Where(p => Sql.In(p.Permissions.Select(x => x.Name), permission)));
-			}
-		}
+        public IList<Group> GetGroupsWithPermission(string permission)
+        {
+            using (var conn = CreateConnection())
+            {
+                return conn.Select(conn.From<Group>().Where(p => Sql.In(p.Permissions.Select(x => x.Name), permission)));
+            }
+        }
 
-		public void SaveGroup(Group group)
-		{
-			using (var conn = CreateConnection())
-			{
-				conn.Save(group);
-			}
-		}
-	}
+        public void SaveGroup(Group group)
+        {
+            using (var conn = CreateConnection())
+            {
+                conn.Save(group);
+            }
+        }
+    }
 }

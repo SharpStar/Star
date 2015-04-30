@@ -83,6 +83,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\SharpConfig.cs" />
+    <Compile Include="ConsoleCommands\BroadcastCommand.cs" />
     <Compile Include="ConsoleCommands\HelpCommand.cs" />
     <Compile Include="ConsoleCommands\KickAllCommand.cs" />
     <Compile Include="ConsoleCommands\ListCommand.cs" />
