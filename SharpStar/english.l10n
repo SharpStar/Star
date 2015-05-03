@@ -41,6 +41,12 @@ BroadcastCommandDesc=Broadcasts a message to the entire server.
 BroadcastCommandHelp=Syntax: broadcast "<message>"
 BroadcastChatName=BROADCAST
 
+WarpToWorldCommandName=worldwarp
+WarpToWorldCommandDesc=Warps a player to the specified world
+WarpToWorldCommandHelp=Syntax: worldwarp <uuid> <coordinates> <spawn x> <spawn y>
+WarpToWorldCommandSpawnXYInvalid=Invalid x, y spawn values!
+WarpToWorldCommandParseError=Invalid coordinates!
+
 #Player Commands
 
 PlayerCommandChatName=Star

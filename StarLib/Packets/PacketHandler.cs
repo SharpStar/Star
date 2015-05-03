@@ -27,7 +27,7 @@ namespace StarLib.Packets
     /// The base class for all packet handlers
     /// </summary>
     /// <typeparam name="T">The type of packet to handle</typeparam>
-    public abstract class PacketHandler<T> : IPacketHandler where T : Packet
+    public abstract class PacketHandler<T> : IPacketHandler where T : Packet, new()
     {
         public abstract void Handle(T packet, StarConnection connection);
 
@@ -36,6 +36,14 @@ namespace StarLib.Packets
         public Type Type
         {
             get { return typeof(T); }
+        }
+
+        public byte PacketId
+        {
+            get
+            {
+                return ((Packet)Activator.CreateInstance(typeof(T))).PacketId;
+            }
         }
 
         public void HandleBefore(Packet packet, StarConnection connection)

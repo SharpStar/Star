@@ -266,7 +266,8 @@ namespace SharpStar
                 new ListCommand(),
                 new ReloadConfigsCommand(),
                 new UuidOfCommand(),
-                new BroadcastCommand()
+                new BroadcastCommand(),
+                new WarpToWorldCommand()
             };
         }
 
@@ -274,7 +275,6 @@ namespace SharpStar
         {
             return new IPacketHandler[]
             {
-                new AllPacketsHandler(),
                 new ClientConnectHandler(),
                 new ServerDisconnectHandler(),
                 new ChatReceivePacketHandler(),
@@ -299,7 +299,7 @@ namespace SharpStar
                 new PlayerListCommand(),
                 new PlayerListPlayersCommand(),
                 new PlayerRegisterAccountCommand(),
-                new PlayerWarpToPlayerCommand()
+                new PlayerWarpToPlayerCommand(),
             };
         }
     }

@@ -25,6 +25,8 @@ namespace StarLib.Packets
 {
     public interface IPacketHandler
     {
+        byte PacketId { get; }
+
         Type Type { get; }
 
         void HandleBefore(Packet packet, StarConnection connection);

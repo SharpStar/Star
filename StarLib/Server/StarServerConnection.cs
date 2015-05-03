@@ -71,13 +71,12 @@ namespace StarLib.Server
 				{
 					StarLog.DefaultLogger.Error("Proxy connection to server has failed.");
 
-					Stop();
+                    Proxy.Close();
 
 					return;
 				}
 
 				StartReceive();
-				OtherConnection.FlushPackets();
 
 				e.Completed -= Conn_Completed;
 

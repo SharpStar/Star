@@ -132,7 +132,7 @@ namespace StarLib.Packets
         /// </summary>
         /// <param name="packetId">The id of the packet</param>
         /// <param name="data">The data that will be fed into the packet to be read</param>
-        /// <returns></returns>
+        /// <returns>The decoded packet</returns>
         private Packet Decode(byte packetId, byte[] data)
         {
             Packet packet;
@@ -166,8 +166,7 @@ namespace StarLib.Packets
                     packet = new GenericPacket(packetId) { Data = data };
                 }
 
-                if (packet != null)
-                    packet.IsReceive = true;
+                packet.IsReceive = true;
             }
             catch (Exception ex)
             {

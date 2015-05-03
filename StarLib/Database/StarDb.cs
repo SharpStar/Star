@@ -42,7 +42,10 @@ namespace StarLib.Database
             _migrator = new DbMigrator(StarDbFileName);
 
             CreateTables();
+
+#if !DEBUG
             Migrate();
+#endif
         }
 
         public void Migrate()

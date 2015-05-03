@@ -90,9 +90,9 @@
     <Compile Include="ConsoleCommands\ListPlayersCommand.cs" />
     <Compile Include="ConsoleCommands\ReloadConfigsCommand.cs" />
     <Compile Include="ConsoleCommands\UuidOfCommand.cs" />
+    <Compile Include="ConsoleCommands\WarpToWorldCommand.cs" />
     <Compile Include="Extensions\ObservableExtensions.cs" />
     <Compile Include="Native\NativeMethods.cs" />
-    <Compile Include="PacketHandlers\AllPacketsHandler.cs" />
     <Compile Include="PacketHandlers\CelestialRequestHandler.cs" />
     <Compile Include="PacketHandlers\ChatReceivePacketHandler.cs" />
     <Compile Include="PacketHandlers\ChatSendHandler.cs" />

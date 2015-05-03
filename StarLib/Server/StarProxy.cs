@@ -144,7 +144,7 @@ namespace StarLib.Server
 		}
 
 		/// <summary>
-		/// Closes the connections and releases all resources used by them
+		/// Closes the connections
 		/// </summary>
 		public void Close()
 		{

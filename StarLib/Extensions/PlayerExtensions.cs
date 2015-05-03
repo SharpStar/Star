@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using StarLib.DataTypes;
 using StarLib.Misc;
 using StarLib.Packets;
 using StarLib.Packets.Starbound;
@@ -63,6 +64,36 @@ namespace StarLib.Extensions
                     Value = new WarpToPlayerAction
                     {
                         Uuid = otherPlayer.Uuid
+                    }
+                }
+            });
+        }
+
+        public static void WarpToWorld(this Player player, CelestialCoordinates coords, float spawnX, float spawnY)
+        {
+            player.Proxy.ServerConnection.SendPacket(new PlayerWarpPacket
+            {
+                Action = new Any<WarpToWorldAction, WarpToPlayerAction, WarpAliasAction>
+                {
+                    Value = new WarpToWorldAction
+                    {
+                        WorldId = new Any<UniqueWorldId, CelestialWorldId, ClientShipWorldId, MissionWorldId>
+                        {
+                            Value = new CelestialWorldId
+                            {
+                                Coordinates = coords
+                            }
+                        },
+                        SpawnTarget = new SpawnTarget
+                        {
+                            Target = new Any<SpawnTargetUniqueEntity, SpawnTargetPosition>
+                            {
+                                Value = new SpawnTargetPosition
+                                {
+                                    Position = new Vec2F { X = spawnX, Y = spawnY }
+                                }
+                            }
+                        }
                     }
                 }
             });
