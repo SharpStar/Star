@@ -34,7 +34,7 @@ namespace SharpStar.PacketHandlers
 			Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(_ =>
 			{
 				if (proxy.Connected)
-					proxy.ClientConnection.Stop();
+					proxy.Close();
 			});
 		}
 

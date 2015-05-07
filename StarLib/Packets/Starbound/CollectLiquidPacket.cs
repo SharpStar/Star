@@ -21,24 +21,24 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-    public class CollectLiquidPacket : Packet
-    {
-        public override byte PacketId
-        {
-            get
-            {
-                return (byte) PacketType.CollectLiquid;
-            }
-            protected set
-            {
-                throw new NotImplementedException();
-            }
-        }
+    //public class CollectLiquidPacket : Packet
+    //{
+    //    public override byte PacketId
+    //    {
+    //        get
+    //        {
+    //            return (byte) PacketType.CollectLiquid;
+    //        }
+    //        protected set
+    //        {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
 
-        [StarSerialize(0)]
-        public IList<Vec2I> TilePositions { get; set; }
+    //    [StarSerialize(0)]
+    //    public IList<Vec2I> TilePositions { get; set; }
 
-        [StarSerialize(1)]
-        public byte LiquidId { get; set; }
-    }
+    //    [StarSerialize(1)]
+    //    public byte LiquidId { get; set; }
+    //}
 }

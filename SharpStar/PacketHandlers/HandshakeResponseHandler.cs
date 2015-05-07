@@ -27,43 +27,78 @@ using StarLib.Server;
 
 namespace SharpStar.PacketHandlers
 {
-	public class HandshakeResponseHandler : PacketHandler<HandshakeResponsePacket>
-	{
-		public override void Handle(HandshakeResponsePacket packet, StarConnection connection)
-		{
-			Account account = connection.Proxy.Player.Account;
+    public class HandshakeResponseHandler : PacketHandler<HandshakeResponsePacket>
+    {
+        public override void Handle(HandshakeResponsePacket packet, StarConnection connection)
+        {
+            Account account = connection.Proxy.Player.Account;
 
-			if (account != null)
-			{
-				byte[] acctHash = Convert.FromBase64String(account.PasswordHash);
+            if (account != null)
+            {
+                Ban acctBan = StarMain.Instance.Database.GetBanByAccount(account.Id);
 
-				connection.Proxy.Player.AuthSuccess = packet.PasswordHash.SequenceEqual(acctHash);
+                if (acctBan != null && acctBan.Active)
+                {
+                    //ban has expired, set ban to inactive
+                    if (DateTime.Now > acctBan.ExpirationTime)
+                    {
+                        acctBan.Active = false;
 
-				if (!connection.Proxy.Player.AuthSuccess)
-				{
-					connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
-					{
-						Reason = StarMain.Instance.CurrentLocalization["WrongPasswordError"]
-					});
+                        StarMain.Instance.Database.SaveBan(acctBan);
+                        StarMain.Instance.Database.AddEvent(
+                            string.Format("The ban for account {0} ({1}) has been lifted", account.Username, connection.Proxy.Player.Name),
+                            new[] { "auto" });
+                    }
+                    else
+                    {
+                        connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
+                        {
+                            Reason = string.Format(StarMain.Instance.CurrentLocalization["BanReasonMessage"].Replace("\\n", "\n"), acctBan.Reason,
+                            acctBan.ExpirationTime.ToString(StarMain.Instance.CurrentLocalization["BanMessageExpirationDateFormat"]))
+                        });
 
-					connection.Proxy.Player.Account = null;
-				}
-			}
-			else if (!connection.Proxy.Player.AuthAttempted)
-			{
-				connection.Proxy.Player.AuthSuccess = true;
-			}
-			else
-			{
-				connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
-				{
-					Reason = StarMain.Instance.CurrentLocalization["WrongPasswordError"]
-				});
-			}
-		}
+                        StarMain.Instance.Database.AddEvent(
+                            string.Format("Banned account {0} ({1}) attempted to join!", account.Username, connection.Proxy.Player.Name),
+                            new[] { "bans" });
 
-		public override void HandleSent(HandshakeResponsePacket packet, StarConnection connection)
-		{
-		}
-	}
+                        return;
+                    }
+                }
+
+                //add the character to the databse and associate it with the account
+                StarMain.Instance.Database.AddCharacter(connection.Proxy.Player.Name, connection.Proxy.Player.Uuid.Id, account.Id);
+
+                byte[] acctHash = Convert.FromBase64String(account.PasswordHash);
+
+                connection.Proxy.Player.AuthSuccess = packet.PasswordHash.SequenceEqual(acctHash);
+
+                if (!connection.Proxy.Player.AuthSuccess)
+                {
+                    connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
+                    {
+                        Reason = StarMain.Instance.CurrentLocalization["WrongPasswordError"]
+                    });
+
+                    connection.Proxy.Player.Account = null;
+                }
+            }
+            else if (!connection.Proxy.Player.AuthAttempted)
+            {
+                connection.Proxy.Player.AuthSuccess = true;
+
+                StarMain.Instance.Database.AddCharacter(connection.Proxy.Player.Name, connection.Proxy.Player.Uuid.Id, null);
+            }
+            else
+            {
+                connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
+                {
+                    Reason = StarMain.Instance.CurrentLocalization["WrongPasswordError"]
+                });
+            }
+        }
+
+        public override void HandleSent(HandshakeResponsePacket packet, StarConnection connection)
+        {
+        }
+    }
 }

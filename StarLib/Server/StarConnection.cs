@@ -25,6 +25,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Ionic.Zlib;
+using Nito.AsyncEx;
 using StarLib.DataTypes;
 using StarLib.Extensions;
 using StarLib.Logging;
@@ -43,9 +44,9 @@ namespace StarLib.Server
         #region Abstract Methods/Properties
         public abstract Direction Direction { get; }
 
-        public abstract void Start();
+        public abstract Task StartAsync();
 
-        public abstract void Stop();
+        public abstract Task StopAsync();
         #endregion
 
         #region Public Properties
@@ -55,9 +56,9 @@ namespace StarLib.Server
 
         public StarProxy Proxy { get; internal set; }
 
-        public Socket ConnectionSocket { get; protected set; }
+        public TcpClient ConnectionClient { get; protected set; }
 
-        public Dictionary<byte, List<IPacketHandler>> PacketHandlers
+        public ConcurrentDictionary<byte, List<IPacketHandler>> PacketHandlers
         {
             get
             {
@@ -92,20 +93,21 @@ namespace StarLib.Server
         #region Private
         private long _connected;
 
-        private SocketAsyncEventArgs _readArgs;
+        private readonly AsyncCollection<Packet> _packetQueue;
 
-        private readonly BlockingCollection<Packet> _packetQueue;
+        private readonly ConcurrentDictionary<byte, List<IPacketHandler>> _packetHandlers;
 
-        private readonly Dictionary<byte, List<IPacketHandler>> _packetHandlers;
+        private readonly CancellationTokenSource _cts;
 
+        private NetworkStream _networkStream;
 
-        //private readonly CancellationTokenSource _flushToken;
         #endregion
 
         protected StarConnection(Type[] packetTypes)
         {
-            _packetQueue = new BlockingCollection<Packet>(new ConcurrentQueue<Packet>());
-            _packetHandlers = new Dictionary<byte, List<IPacketHandler>>();
+            _packetQueue = new AsyncCollection<Packet>();
+            _packetHandlers = new ConcurrentDictionary<byte, List<IPacketHandler>>();
+            _cts = new CancellationTokenSource();
             _connected = 0;
 
             PacketReader = new PacketReader(packetTypes);
@@ -122,7 +124,7 @@ namespace StarLib.Server
                 foreach (IPacketHandler handler in handlers)
                 {
                     if (!PacketHandlers.ContainsKey(handler.PacketId))
-                        PacketHandlers.Add(handler.PacketId, new List<IPacketHandler>(new[] { handler }));
+                        PacketHandlers.AddOrUpdate(handler.PacketId, new List<IPacketHandler>(new[] { handler }), (id, p) => p);
                     else
                         PacketHandlers[handler.PacketId].Add(handler);
                 }
@@ -147,7 +149,7 @@ namespace StarLib.Server
         /// <summary>
         /// Start receiving data from this connection
         /// </summary>
-        public void StartReceive()
+        public virtual Task StartReceiveAsync()
         {
             if (IsDisposed)
                 throw new ObjectDisposedException("this");
@@ -157,82 +159,49 @@ namespace StarLib.Server
 
             Interlocked.CompareExchange(ref _connected, 1, 0);
 
-            ConnectionSocket.NoDelay = true;
+            _networkStream = ConnectionClient.GetStream();
 
-            _readArgs = new SocketAsyncEventArgs();
+            ConnectionClient.NoDelay = true;
 
-            byte[] buffer = new byte[16000];
-            _readArgs.SetBuffer(buffer, 0, buffer.Length);
-            _readArgs.RemoteEndPoint = ConnectionSocket.RemoteEndPoint;
+            Task recvTask = Task.Run(() => ProcessReceive(), _cts.Token);
+            Task sendTask = Task.Run(() => FlushPackets(), _cts.Token);
 
-            _readArgs.Completed += IO_Completed;
-
-            bool willRaiseEvent = ConnectionSocket.ReceiveAsync(_readArgs);
-
-            if (!willRaiseEvent)
-            {
-                ProcessReceive(_readArgs);
-            }
+            return Task.FromResult(true);
         }
 
-        private void IO_Completed(object sender, SocketAsyncEventArgs e)
+        protected void Close()
         {
-            if (IsDisposed || !Connected)
-            {
-                e.Completed -= IO_Completed;
-                e.Dispose();
-
-                return;
-            }
-
-            try
-            {
-                switch (e.LastOperation)
-                {
-                    case SocketAsyncOperation.Receive:
-                        ProcessReceive(e);
-                        break;
-                    case SocketAsyncOperation.Send:
-                        e.Completed -= IO_Completed;
-                        e.SetBuffer(null, 0, 0);
-                        e.Dispose();
-
-                        break;
-                    default:
-                        throw new ArgumentException("The last operation completed on the socket was not a receive or send");
-                }
-            }
-            catch (Exception ex)
-            {
-                ex.LogError();
-
-                Close();
-            }
+            CloseAsync().Wait();
         }
 
-        protected virtual void Close()
+        protected virtual async Task CloseAsync()
         {
             if (!Connected)
                 return;
 
             Interlocked.CompareExchange(ref _connected, 0, 1);
 
-            Stopwatch sw = Stopwatch.StartNew();
+            _cts.Cancel();
 
             try
             {
                 _packetQueue.CompleteAdding();
 
-                if (ConnectionSocket != null)
+                if (ConnectionClient != null)
                 {
-                    ConnectionSocket.Shutdown(SocketShutdown.Send);
+                    await Task.Factory.FromAsync(ConnectionClient.Client.BeginDisconnect(false, null, null), ConnectionClient.Client.EndDisconnect);
+
+                    Stopwatch sw = Stopwatch.StartNew();
 
                     byte[] tmpBuf = new byte[1024];
-                    while (ConnectionSocket.Poll(100000, SelectMode.SelectRead)) //100 ms timeout
+
+                    while (await _networkStream.ReadAsync(tmpBuf, 0, tmpBuf.Length) > 0)
                     {
-                        if (ConnectionSocket.Receive(tmpBuf) <= 0 || sw.Elapsed > TimeSpan.FromSeconds(5))
+                        if (sw.Elapsed > TimeSpan.FromSeconds(1))
                             break;
                     }
+
+                    sw.Stop();
                 }
             }
             catch
@@ -240,40 +209,57 @@ namespace StarLib.Server
             }
             finally
             {
-                sw.Stop();
-
-                if (ConnectionSocket != null)
-                {
-                    ConnectionSocket.Close();
-                    ConnectionSocket = null;
-                }
-
                 EventHandler disconnected = Disconnected;
                 if (disconnected != null)
                     disconnected(this, EventArgs.Empty);
 
-                if (_readArgs != null)
-                    _readArgs.Dispose();
+                if (ConnectionClient != null)
+                {
+                    ConnectionClient.Close();
+                    ConnectionClient = null;
+                }
             }
         }
 
-        private void ProcessReceive(SocketAsyncEventArgs e)
+        protected virtual async Task ProcessReceive()
         {
-            OnRecieved(e);
-        }
+            byte[] buffer = new byte[8192];
 
-        protected virtual void OnRecieved(SocketAsyncEventArgs e)
-        {
-            if (IsDisposed || !Connected)
-                return;
-
-            if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
+            while (true)
             {
-                byte[] cpyBuff = new byte[e.BytesTransferred];
-                Buffer.BlockCopy(e.Buffer, e.Offset, cpyBuff, 0, cpyBuff.Length);
+                if (_cts.IsCancellationRequested)
+                    break;
 
-                foreach (Packet packet in PacketReader.Read(cpyBuff, 0))
+                byte[] data;
+                try
                 {
+                    int len = await _networkStream.ReadAsync(buffer, 0, buffer.Length, _cts.Token);
+
+                    if (len == 0)
+                    {
+                        Close();
+
+                        break;
+                    }
+
+                    data = new byte[len];
+                    Buffer.BlockCopy(buffer, 0, data, 0, len);
+                }
+                catch
+                {
+                    Close();
+
+                    break;
+                }
+
+                if (_cts.IsCancellationRequested)
+                    break;
+
+                foreach (Packet packet in PacketReader.Read(data, 0))
+                {
+                    if (_cts.IsCancellationRequested)
+                        break;
+
                     try
                     {
                         if (packet == null)
@@ -289,7 +275,7 @@ namespace StarLib.Server
                         {
                             pHandlers = PacketHandlers[packet.PacketId];
 
-                            foreach (IPacketHandler beforeHandler in pHandlers)
+                            foreach (IPacketHandler beforeHandler in pHandlers.Where(p => p.Type.IsInstanceOfType(packet)))
                             {
                                 beforeHandler.HandleBefore(packet, this);
                             }
@@ -299,11 +285,11 @@ namespace StarLib.Server
                         if (packetArgs != null)
                             packetArgs(this, new PacketEventArgs(Proxy, packet));
 
-                        OtherConnection.SendPacket(packet);
+                        await OtherConnection.SendPacketAsync(packet);
 
                         if (pHandlers != null)
                         {
-                            foreach (IPacketHandler sentHandler in pHandlers)
+                            foreach (IPacketHandler sentHandler in pHandlers.Where(p => p.Type.IsInstanceOfType(packet)))
                             {
                                 sentHandler.HandleAfter(packet, this);
                             }
@@ -319,24 +305,6 @@ namespace StarLib.Server
                         ex.LogError();
                     }
                 }
-
-                try
-                {
-                    bool willRaiseEvent = ConnectionSocket.ReceiveAsync(e);
-
-                    if (!willRaiseEvent)
-                    {
-                        ProcessReceive(e);
-                    }
-                }
-                catch
-                {
-                    Close();
-                }
-            }
-            else
-            {
-                Close();
             }
         }
 
@@ -346,32 +314,70 @@ namespace StarLib.Server
         /// <param name="sendingPacket">The packet to send</param>
         public virtual void SendPacket(Packet sendingPacket)
         {
-            if (!Connected)
-            {
-                if (!_packetQueue.IsAddingCompleted)
-                    _packetQueue.Add(sendingPacket);
-            }
-            else
-            {
-                if (_packetQueue.Count > 0)
-                    FlushPackets();
-                else
-                    FlushPacket(sendingPacket);
-            }
+            SendPacketAsync(sendingPacket).Wait();
         }
 
         /// <summary>
-        /// Flush all packets currently queued to the client
+        /// Sends a packet to this connection asynchronously
         /// </summary>
-        public void FlushPackets()
+        /// <param name="sendingPacket">The packet to send</param>
+        public virtual async Task SendPacketAsync(Packet sendingPacket)
         {
-            foreach (Packet packet in _packetQueue.GetConsumingEnumerable())
+            if (!Connected)
+                return;
+
+            try
             {
-                FlushPacket(packet);
+                await _packetQueue.AddAsync(sendingPacket);
+            }
+            catch (InvalidOperationException)
+            {
+                Close();
+            }
+
+            //if (!Connected)
+            //{
+            //    if (!_packetQueue.IsAddingCompleted)
+            //        _packetQueue.TryAdd(sendingPacket);
+            //}
+            //else
+            //{
+            //    if (_packetQueue.Count > 0)
+            //        FlushPackets();
+            //    else
+            //        FlushPacket(sendingPacket);
+            //}
+        }
+
+        /// <summary>
+        /// Flush all packets currently queued to the client asynchronously
+        /// </summary>
+        public virtual async Task FlushPackets()
+        {
+            while (await _packetQueue.OutputAvailableAsync(_cts.Token))
+            {
+                if (_cts.IsCancellationRequested)
+                    break;
+
+                Packet packet;
+
+                try
+                {
+                    packet = await _packetQueue.TakeAsync(_cts.Token);
+                }
+                catch
+                {
+                    break;
+                }
+
+                if (_cts.IsCancellationRequested)
+                    break;
+
+                await FlushPacket(packet);
             }
         }
 
-        protected virtual void FlushPacket(Packet packet)
+        protected virtual async Task FlushPacket(Packet packet)
         {
             try
             {
@@ -397,7 +403,7 @@ namespace StarLib.Server
                     buffer = PacketSerializer.Serialize(packet);
                 }
 
-                bool compressed = buffer.Length >= 128000;
+                bool compressed = buffer.Length >= 8192;
 
                 if (compressed)
                 {
@@ -413,29 +419,13 @@ namespace StarLib.Server
                 Buffer.BlockCopy(lenBuf, 0, finalBuffer, 1, lenBuf.Length);
                 Buffer.BlockCopy(buffer, 0, finalBuffer, 1 + lenBuf.Length, buffer.Length);
 
-                SocketAsyncEventArgs writeArgs = new SocketAsyncEventArgs();
-                writeArgs.RemoteEndPoint = ConnectionSocket.RemoteEndPoint;
-                writeArgs.SetBuffer(finalBuffer, 0, finalBuffer.Length);
-                writeArgs.Completed += IO_Completed;
-
-                Packet tmpPacket = packet;
-                EventHandler<SocketAsyncEventArgs> handler = null;
-                handler = (s, e) =>
-                {
-                    EventHandler<PacketEventArgs> packetSent = PacketSent;
-                    if (packetSent != null)
-                        packetSent(this, new PacketEventArgs(Proxy, tmpPacket));
-
-                    if (handler != null)
-                        writeArgs.Completed -= handler;
-                };
-
-                writeArgs.Completed += handler;
-
                 if (Connected)
                 {
-                    if (!ConnectionSocket.SendAsync(writeArgs))
-                        IO_Completed(this, writeArgs);
+                    await _networkStream.WriteAsync(finalBuffer, 0, finalBuffer.Length, _cts.Token);
+
+                    EventHandler<PacketEventArgs> packetSent = PacketSent;
+                    if (packetSent != null)
+                        packetSent(this, new PacketEventArgs(Proxy, packet));
                 }
             }
             catch
@@ -458,8 +448,6 @@ namespace StarLib.Server
             if (disposing)
             {
             }
-
-            _readArgs = null;
         }
 
         ~StarConnection()

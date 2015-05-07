@@ -20,6 +20,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using StarLib.Extensions;
 using StarLib.Logging;
 using StarLib.Packets.Starbound;
 
@@ -30,10 +31,10 @@ namespace StarLib.Server
 	/// </summary>
 	public class StarClientConnection : StarConnection
 	{
-		public StarClientConnection(Socket socket, Type[] packetTypes)
+		public StarClientConnection(TcpClient client, Type[] packetTypes)
 			: base(packetTypes)
 		{
-			ConnectionSocket = socket;
+            ConnectionClient = client;
 		}
 
 		public override Direction Direction
@@ -41,30 +42,28 @@ namespace StarLib.Server
 			get { return Direction.Client; }
 		}
 
-		public override void Start()
+		public override Task StartAsync()
 		{
-			StartReceive();
+			return StartReceiveAsync();
 		}
 
-		public override void Stop()
+		public override Task StopAsync()
 		{
-			Close();
+            return CloseAsync();
 		}
 
-		protected override void Close()
+		protected override async Task CloseAsync()
 		{
-			if (!Connected)
-				return;
+            try
+            {
+                await Proxy.ServerConnection.SendPacketAsync(new ClientDisconnectRequestPacket());
+            }
+            catch (Exception ex)
+            {
+                ex.LogError();
+            }
 
-			try
-			{
-				OtherConnection.SendPacket(new ClientDisconnectRequestPacket());
-			}
-			catch (Exception)
-			{
-			}
-
-			base.Close();
+            await base.CloseAsync();
 		}
 	}
 }

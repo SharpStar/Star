@@ -38,208 +38,212 @@ using StarLib.Starbound;
 
 namespace StarLib
 {
-	/// <summary>
-	/// <see cref="StarMain"/> is the starting point for this library. All initializations are done through here<para/>
-	/// Note: This class cannot be inherited and there will only ever be one instance of this class
-	/// </summary>
-	public sealed class StarMain
-	{
-		#region Singleton
+    /// <summary>
+    /// <see cref="StarMain"/> is the starting point for this library. All initializations are done through here<para/>
+    /// Note: This class cannot be inherited and there will only ever be one instance of this class
+    /// </summary>
+    public sealed class StarMain
+    {
+        #region Singleton
 
-		private static readonly Lazy<StarMain> _instance = new Lazy<StarMain>(() => new StarMain());
+        private static readonly Lazy<StarMain> _instance = new Lazy<StarMain>(() => new StarMain());
 
-		/// <summary>
-		/// The only instance of <see cref="StarMain"/>
-		/// </summary>
-		public static StarMain Instance
-		{
-			get
-			{
-				return _instance.Value;
-			}
-		}
-		#endregion
+        /// <summary>
+        /// The only instance of <see cref="StarMain"/>
+        /// </summary>
+        public static StarMain Instance
+        {
+            get
+            {
+                return _instance.Value;
+            }
+        }
+        #endregion
 
-		private LocalizationFile _localizationFile;
+        private LocalizationFile _localizationFile;
 
-		#region Public Members
-		public const string ServerConfigFile = "serverconfig.json";
+        #region Public Members
+        public const string ServerConfigFile = "serverconfig.json";
 
-		public StarProxyManager ConnectionManager { get; private set; }
+        public StarProxyManager ConnectionManager { get; private set; }
 
-		public ServerConfiguration ServerConfig { get; private set; }
+        public ServerConfiguration ServerConfig { get; private set; }
 
-		public bool Initialized { get; private set; }
+        public bool Initialized { get; private set; }
 
-		public StarServer Server { get; private set; }
+        public StarServer Server { get; private set; }
 
-		public List<Type> DefaultPacketTypes { get; private set; }
+        public List<Type> DefaultPacketTypes { get; private set; }
 
-		public List<IConfiguration> Configurations { get; private set; }
+        public List<IConfiguration> Configurations { get; private set; }
 
-		public List<IPluginManager> PluginManagers { get; private set; }
+        public List<IPluginManager> PluginManagers { get; private set; }
 
-		public ConsoleCommandManager ConsoleCommandManager { get; private set; }
+        public ConsoleCommandManager ConsoleCommandManager { get; private set; }
 
-		public LocalizationFile CurrentLocalization
-		{
-			get
-			{
-				return _localizationFile;
-			}
-			set
-			{
-				_localizationFile = value;
-				_localizationFile.Load();
-			}
-		}
+        public LocalizationFile CurrentLocalization
+        {
+            get
+            {
+                return _localizationFile;
+            }
+            set
+            {
+                _localizationFile = value;
+                _localizationFile.Load();
+            }
+        }
 
-		public StarDb Database { get; private set; }
+        public StarDb Database { get; private set; }
 
-		#endregion
+        #endregion
 
-		#region Private Members
-		private readonly StarLog _log = StarLog.DefaultLogger;
+        #region Private Members
+        private readonly StarLog _log = StarLog.DefaultLogger;
 
-		private readonly JsonSerializerSettings _jsonSettings;
-		#endregion
+        private readonly JsonSerializerSettings _jsonSettings;
+        #endregion
 
-		#region Events
-		public event EventHandler ShutdownInitiated;
-		#endregion
+        #region Events
+        public event EventHandler ShutdownInitiated;
+        #endregion
 
-		private StarMain()
-		{
-			PluginManagers = new List<IPluginManager>();
-			DefaultPacketTypes = new List<Type>();
-			ConsoleCommandManager = new ConsoleCommandManager();
-			ConnectionManager = new StarProxyManager();
-			Configurations = new List<IConfiguration>();
+        private StarMain()
+        {
+            PluginManagers = new List<IPluginManager>();
+            DefaultPacketTypes = new List<Type>();
+            ConsoleCommandManager = new ConsoleCommandManager();
+            ConnectionManager = new StarProxyManager();
+            Configurations = new List<IConfiguration>();
 
-			_jsonSettings = new JsonSerializerSettings();
-			ReadStarConfigs();
+            _jsonSettings = new JsonSerializerSettings();
+            ReadStarConfigs();
 
-			Initialized = false;
-		}
+            Initialized = false;
+        }
 
-		/// <summary>
-		/// Initialize <see cref="StarMain"/> for use
-		/// </summary>
-		public void Init()
-		{
-			if (Initialized)
-				throw new Exception("Star has already been initialized!");
+        /// <summary>
+        /// Initialize <see cref="StarMain"/> for use
+        /// </summary>
+        public void Init()
+        {
+            if (Initialized)
+                throw new Exception("Star has already been initialized!");
 
-			Initialized = true;
-			InitPackets();
+            Initialized = true;
+            InitPackets();
 
-			Server = new StarServer(ServerConfig, ConnectionManager, DefaultPacketTypes.ToArray());
-		}
+            Server = new StarServer(ServerConfig, ConnectionManager, DefaultPacketTypes.ToArray());
+        }
 
-		public void Start()
-		{
-			InitPlugins();
+        public void Start()
+        {
+            InitPlugins();
 
-			_log.Info("Loading database...");
-			Database = new StarDb();
+            _log.Info("Loading database...");
+            Database = new StarDb();
 
-			_log.Info("Loading plugins...");
-			LoadPlugins();
+            _log.Info("Loading plugins...");
+            LoadPlugins();
 
-			_log.Info("Starting server...");
+            _log.Info("Starting server...");
 
-			Server.StartServer();
+            Server.StartServer();
 
-			_log.Info("Server is now online!");
-		}
+            _log.Info("Server is now online!");
+        }
 
-		public void Shutdown()
-		{
-			EventHandler shutdown = ShutdownInitiated;
-			if (shutdown != null)
-				shutdown(this, EventArgs.Empty);
+        public void Shutdown()
+        {
+            EventHandler shutdown = ShutdownInitiated;
+            if (shutdown != null)
+                shutdown(this, EventArgs.Empty);
 
-			SaveAllConfigurations();
+            SaveAllConfigurations();
 
-			Server.StopServer();
-			Database.Dispose();
-		}
+            Server.StopServer();
+            Database.Dispose();
+        }
 
-		private void InitPackets()
-		{
-			foreach (Type type in typeof(StarMain).Assembly.GetTypes().Where(p => p.Namespace == "StarLib.Packets.Starbound"))
-			{
-				if (!typeof(Packet).IsAssignableFrom(type))
-					continue;
+        private void InitPackets()
+        {
+            var tasks = new List<Task>();
+            foreach (Type type in typeof(StarMain).Assembly.GetTypes().Where(p => p.Namespace == "StarLib.Packets.Starbound"))
+            {
+                if (!typeof(Packet).IsAssignableFrom(type))
+                    continue;
 
-				_log.Debug("Adding default packet type {0}", type.FullName);
-				DefaultPacketTypes.Add(type);
+                _log.Debug("Adding default packet type {0}", type.FullName);
+                DefaultPacketTypes.Add(type);
 
-				_log.Debug("Building and caching packet serializer/deserializer for type {0}", type.FullName);
-				PacketSerializer.BuildAndStore(type);
-			}
-		}
+                _log.Debug("Building and caching packet serializer/deserializer for type {0}", type.FullName);
 
-		private void InitPlugins()
-		{
-			CSPluginManager csManager = new CSPluginManager();
-			csManager.Init("plugins");
+                tasks.Add(Task.Run(() => PacketSerializer.BuildAndStore(type)));
+            }
 
-			PluginManagers.Add(csManager);
-		}
+            Task.WhenAll(tasks).Wait();
+        }
 
-		private void LoadPlugins()
-		{
-			foreach (IPluginManager ipm in PluginManagers)
-			{
-				ipm.LoadPlugins("plugins");
-			}
-		}
+        private void InitPlugins()
+        {
+            CSPluginManager csManager = new CSPluginManager();
+            csManager.Init("plugins");
 
-		public bool PassPlayerEventCommand(string command, Player player)
-		{
-			bool fPluginCmd = false;
+            PluginManagers.Add(csManager);
+        }
 
-			foreach (IPluginManager manager in PluginManagers)
-			{
-				if (manager.PassCommand(command, player))
-					fPluginCmd = true;
-			}
+        private void LoadPlugins()
+        {
+            foreach (IPluginManager ipm in PluginManagers)
+            {
+                ipm.LoadPlugins("plugins");
+            }
+        }
 
-			return fPluginCmd;
-		}
+        public bool PassPlayerEventCommand(string command, Player player)
+        {
+            bool fPluginCmd = false;
 
-		private void ReadStarConfigs()
-		{
-			var serverConfig = new JsonFileConfiguration<ServerConfiguration>(ServerConfigFile, _jsonSettings);
-			serverConfig.Load();
+            foreach (IPluginManager manager in PluginManagers)
+            {
+                if (manager.PassCommand(command, player))
+                    fPluginCmd = true;
+            }
 
-			ServerConfig = serverConfig.Config;
+            return fPluginCmd;
+        }
 
-			Configurations.Add(serverConfig);
-		}
+        private void ReadStarConfigs()
+        {
+            var serverConfig = new JsonFileConfiguration<ServerConfiguration>(ServerConfigFile, _jsonSettings);
+            serverConfig.Load();
 
-		/// <summary>
-		/// Save all of <see cref="StarMain"/>'s configurations to disk
-		/// </summary>
-		public void SaveAllConfigurations()
-		{
-			foreach (IConfiguration config in Configurations)
-			{
-				config.Save();
-			}
-		}
+            ServerConfig = serverConfig.Config;
 
-		/// <summary>
-		/// Reload all of <see cref="StarMain"/>'s configurations
-		/// </summary>
-		public void ReloadAllConfigurations()
-		{
-			foreach (IConfiguration config in Configurations)
-			{
-				config.Load();
-			}
-		}
+            Configurations.Add(serverConfig);
+        }
 
-	}
+        /// <summary>
+        /// Save all of <see cref="StarMain"/>'s configurations to disk
+        /// </summary>
+        public void SaveAllConfigurations()
+        {
+            foreach (IConfiguration config in Configurations)
+            {
+                config.Save();
+            }
+        }
+
+        /// <summary>
+        /// Reload all of <see cref="StarMain"/>'s configurations
+        /// </summary>
+        public void ReloadAllConfigurations()
+        {
+            foreach (IConfiguration config in Configurations)
+            {
+                config.Load();
+            }
+        }
+
+    }
 }

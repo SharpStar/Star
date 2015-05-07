@@ -23,39 +23,82 @@ using System.Threading.Tasks;
 
 namespace StarLib.Extensions
 {
-	public static class StringExtensions
-	{
-		private static readonly Regex StripColorRegex = new Regex("\\^[#a-zA-Z0-9]+;", RegexOptions.Compiled);
+    public static class StringExtensions
+    {
+        private static readonly Regex StripColorRegex = new Regex("\\^[#a-zA-Z0-9]+;", RegexOptions.Compiled);
+        private static readonly Regex ParseTimeRegex = new Regex("(?<value>[0-9]+)(y|mo|d|h|m|s)", RegexOptions.Compiled);
 
-		public static IEnumerable<string> SeparateString(this string str, int max)
-		{
-			if (str.Length > max)
-			{
-				int ctr = 0;
+        public static IEnumerable<string> SeparateString(this string str, int max)
+        {
+            if (str.Length > max)
+            {
+                int ctr = 0;
 
-				string line = str;
-				while (ctr < str.Length)
-				{
-					int min = Math.Min(line.Length, max);
+                string line = str;
+                while (ctr < str.Length)
+                {
+                    int min = Math.Min(line.Length, max);
 
-					string nextLine = line.Substring(0, min);
+                    string nextLine = line.Substring(0, min);
 
-					line = line.Substring(min);
+                    line = line.Substring(min);
 
-					yield return nextLine;
+                    yield return nextLine;
 
-					ctr += min;
-				}
-			}
-			else
-			{
-				yield return str;
-			}
-		}
+                    ctr += min;
+                }
+            }
+            else
+            {
+                yield return str;
+            }
+        }
 
-		public static string StripColors(this string text)
-		{
-			return StripColorRegex.Replace(text, string.Empty);
-		}
-	}
+        public static string StripColors(this string text)
+        {
+            return StripColorRegex.Replace(text, string.Empty);
+        }
+
+        public static DateTime ToDateTime(this string time)
+        {
+            MatchCollection matches = ParseTimeRegex.Matches(time);
+
+            DateTime now = DateTime.Now;
+            
+            foreach (Match match in matches)
+            {
+                if (!match.Success)
+                    continue;
+
+                int value;
+
+                if (!int.TryParse(match.Groups["value"].Value, out value))
+                    continue;
+
+                switch (match.Groups[1].Value)
+                {
+                    case "y":
+                        now = now.AddYears(value);
+                        break;
+                    case "mo":
+                        now = now.AddMonths(value);
+                        break;
+                    case "d":
+                        now = now.AddDays(value);
+                        break;
+                    case "h":
+                        now = now.AddHours(value);
+                        break;
+                    case "m":
+                        now = now.AddMinutes(value);
+                        break;
+                    case "s":
+                        now = now.AddSeconds(value);
+                        break;
+                }
+            }
+
+            return now;
+        }
+    }
 }

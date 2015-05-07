@@ -23,13 +23,16 @@ using ServiceStack.DataAnnotations;
 
 namespace StarLib.Database.Models
 {
-	public class Character
-	{
-		[AutoIncrement]
-		public int Id { get; set; }
+    public class Character
+    {
+        [AutoIncrement]
+        public int Id { get; set; }
 
-		public string Name { get; set; }
+        public string Name { get; set; }
 
-		public string Uuid { get; set; }
-	}
+        public string Uuid { get; set; }
+
+        [References(typeof(Account))]
+        public int? AccountId { get; set; }
+    }
 }

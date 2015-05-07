@@ -32,39 +32,67 @@ using StarLib.Starbound;
 
 namespace SharpStar.PacketHandlers
 {
-	public class ClientConnectHandler : PacketHandler<ClientConnectPacket>
-	{
-		public override void Handle(ClientConnectPacket packet, StarConnection connection)
-		{
-			Player plr = connection.Proxy.Player;
+    public class ClientConnectHandler : PacketHandler<ClientConnectPacket>
+    {
+        public override void Handle(ClientConnectPacket packet, StarConnection connection)
+        {
+            Player plr = connection.Proxy.Player;
 
-			plr.Name = packet.PlayerName;
-			plr.Uuid = packet.Uuid;
+            plr.Name = packet.PlayerName;
+            plr.Uuid = packet.Uuid;
 
-			if (!string.IsNullOrEmpty(packet.Account) && Program.Configuration.EnableSharpAccounts)
-			{
-				Account account = StarMain.Instance.Database.GetAccountByUsername(packet.Account);
+            if (!string.IsNullOrEmpty(packet.Account) && Program.Configuration.EnableSharpAccounts)
+            {
+                Account account = StarMain.Instance.Database.GetAccountByUsername(packet.Account);
 
-				if (account != null)
-					connection.Proxy.Player.Account = account;
+                if (account == null)
+                    return;
 
-				packet.Account = string.Empty;
+                connection.Proxy.Player.Account = account;
 
-				connection.Proxy.Player.AuthAttempted = true;
+                packet.Account = string.Empty;
 
-				connection.Proxy.ClientConnection.SendPacket(new HandshakeChallengePacket
-				{
-					Salt = account != null ? Encoding.UTF8.GetBytes(account.PasswordSalt) : new byte[0]
-				});
-			}
-			else
-			{
-				connection.Proxy.Player.AuthSuccess = true;
-			}
-		}
+                connection.Proxy.Player.AuthAttempted = true;
 
-		public override void HandleSent(ClientConnectPacket packet, StarConnection connection)
-		{
-		}
-	}
+                connection.Proxy.ClientConnection.SendPacket(new HandshakeChallengePacket
+                {
+                    Salt = Encoding.UTF8.GetBytes(account.PasswordSalt)
+                });
+            }
+            else
+            {
+                Ban ban = StarMain.Instance.Database.GetBanByUuid(packet.Uuid.Id);
+                if (ban != null && ban.Active)
+                {
+                    if (DateTime.Now > ban.ExpirationTime)
+                    {
+                        ban.Active = false;
+
+                        StarMain.Instance.Database.SaveBan(ban);
+                        StarMain.Instance.Database.AddEvent(string.Format("The ban for uuid {0} ({1}) has been lifted", plr.Uuid.Id, plr.Name),
+                            new[] { "auto" });
+                    }
+                    else
+                    {
+                        connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
+                        {
+                            Reason = string.Format(StarMain.Instance.CurrentLocalization["BanReasonMessage"].Replace("\\n", "\n"), ban.Reason,
+                                ban.ExpirationTime.ToString(StarMain.Instance.CurrentLocalization["BanMessageExpirationDateFormat"]))
+                        });
+
+                        StarMain.Instance.Database.AddEvent(string.Format("Banned uuid {0} ({1}) attempted to join!", plr.Uuid.Id, plr.Name),
+                            new[] { "bans" });
+
+                        return;
+                    }
+                }
+
+                connection.Proxy.Player.AuthSuccess = true;
+            }
+        }
+
+        public override void HandleSent(ClientConnectPacket packet, StarConnection connection)
+        {
+        }
+    }
 }

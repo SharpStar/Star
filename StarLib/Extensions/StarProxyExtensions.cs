@@ -19,34 +19,45 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using StarLib.Logging;
 using StarLib.Packets.Starbound;
 using StarLib.Server;
 
 namespace StarLib.Extensions
 {
-	public static class StarProxyExtensions
-	{
-		public static void SendChatMessage(this StarProxy proxy, string name, string message, int maxCharsPerLine = 60)
-		{
-			foreach (string line in message.SeparateString(maxCharsPerLine))
-			{
-				foreach (string line2 in line.Split('\n'))
-				{
-					proxy.ClientConnection.SendPacket(new ChatReceivePacket
-					{
-						Name = name,
-						Message = line2,
-					});
-				}
-			}
-		}
+    public static class StarProxyExtensions
+    {
+        public static void SendChatMessage(this StarProxy proxy, string name, string message, int maxCharsPerLine = 60)
+        {
+            foreach (string line in message.SeparateString(maxCharsPerLine))
+            {
+                foreach (string line2 in line.Split('\n'))
+                {
+                    proxy.ClientConnection.SendPacket(new ChatReceivePacket
+                    {
+                        Name = name,
+                        Message = line2,
+                    });
+                }
+            }
+        }
 
-		public static void Kick(this StarProxy proxy, string reason = "")
-		{
-			proxy.ClientConnection.SendPacket(new ServerDisconnectPacket
-			{
-				Reason = reason
-			});
-		}
-	}
+        public static void Kick(this StarProxy proxy, string reason = "")
+        {
+            EventHandler<PacketEventArgs> handler = (s, e) =>
+            {
+                if (!(e.Packet is ServerDisconnectPacket))
+                {
+                    e.Packet.Ignore = true;
+                }
+            };
+            
+            proxy.ClientConnection.PacketSending += handler;
+            proxy.ServerConnection.SendPacket(new ClientDisconnectRequestPacket());
+            proxy.ClientConnection.SendPacket(new ServerDisconnectPacket
+            {
+                Reason = reason
+            });
+        }
+    }
 }

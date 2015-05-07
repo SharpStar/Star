@@ -25,67 +25,51 @@ using StarLib.Logging;
 
 namespace StarLib.Server
 {
-	/// <summary>
-	/// A connection to the Starbound server
-	/// </summary>
-	public class StarServerConnection : StarConnection
-	{
+    /// <summary>
+    /// A connection to the Starbound server
+    /// </summary>
+    public class StarServerConnection : StarConnection
+    {
 
-		public override Direction Direction
-		{
-			get { return Direction.Server; }
-		}
+        public override Direction Direction
+        {
+            get { return Direction.Server; }
+        }
 
-		public StarServerConnection(Type[] packetTypes)
-			: base(packetTypes)
-		{
-		}
+        public StarServerConnection(Type[] packetTypes)
+            : base(packetTypes)
+        {
+        }
 
-		public override void Start()
-		{
-			SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-			args.Completed += Conn_Completed;
-			args.RemoteEndPoint = Proxy.ListeningServer.ServerEndPoint;
+        public override async Task StartAsync()
+        {
+            ConnectionClient = new TcpClient();
 
-			ConnectionSocket = new Socket(StarMain.Instance.Server.ServerEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-			ConnectionSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            bool failed = false;
+            try
+            {
+                await ConnectionClient.ConnectAsync(StarMain.Instance.Server.ServerEndPoint.Address, StarMain.Instance.Server.ServerEndPoint.Port);
+            }
+            catch
+            {
+                StarLog.DefaultLogger.Error("Proxy connection to server has failed.");
 
-			ConnectionSocket.ConnectAsync(args);
-		}
+                failed = true;
+            }
 
-		public override void Stop()
-		{
-			Close();
-		}
+            if (failed)
+            {
+                await Proxy.CloseAsync();
 
-		private void Conn_Completed(object sender, SocketAsyncEventArgs e)
-		{
-			OnConnectionCompleted(e);
-		}
+                return;
+            }
 
-		protected virtual void OnConnectionCompleted(SocketAsyncEventArgs e)
-		{
-			if (e.LastOperation == SocketAsyncOperation.Connect)
-			{
-				if (e.SocketError != SocketError.Success)
-				{
-					StarLog.DefaultLogger.Error("Proxy connection to server has failed.");
+            await StartReceiveAsync();
+        }
 
-                    Proxy.Close();
-
-					return;
-				}
-
-				StartReceive();
-
-				e.Completed -= Conn_Completed;
-
-				e.Dispose();
-			}
-			else
-			{
-				throw new Exception("This shouldn't happen!");
-			}
-		}
-	}
+        public override Task StopAsync()
+        {
+            return CloseAsync();
+        }
+    }
 }

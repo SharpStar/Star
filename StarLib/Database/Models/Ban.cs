@@ -29,6 +29,12 @@ namespace StarLib.Database.Models
 		public int Id { get; set; }
 
 		public string PlayerName { get; set; }
+
+        public string Reason { get; set; }
+
+        public bool Active { get; set; }
+
+        public DateTime ExpirationTime { get; set; }
 		
 		[Index(Unique = true)]
 		public string Uuid { get; set; }

@@ -29,280 +29,277 @@ using StarLib.Packets;
 
 namespace StarLib.Server
 {
-	/// <summary>
-	/// A Starbound server connection implementation over TCP
-	/// </summary>
-	public class StarServer
-	{
-		private long _serverRunning;
+    /// <summary>
+    /// A Starbound server connection implementation over TCP
+    /// </summary>
+    public class StarServer
+    {
+        private long _serverRunning;
 
-		private int _numConnected;
-		private int _totalJoined;
+        private int _numConnected;
+        private int _totalJoined;
 
-		private Type[] _packetTypes;
+        private Type[] _packetTypes;
 
-		private readonly List<IPacketHandler> _packetHandlers;
+        private readonly List<IPacketHandler> _packetHandlers;
 
-		public StarProxyManager Proxies { get; private set; }
+        public StarProxyManager Proxies { get; private set; }
 
-		protected Socket ListenSocket;
+        protected TcpListener ListenSocket;
 
-		public bool ServerRunning
-		{
-			get
-			{
-				return Interlocked.Read(ref _serverRunning) == 1;
-			}
-		}
+        public bool ServerRunning
+        {
+            get
+            {
+                return Interlocked.Read(ref _serverRunning) == 1;
+            }
+        }
 
-		public IPEndPoint LocalEndPoint { get; private set; }
+        public IPEndPoint LocalEndPoint { get; private set; }
 
-		public IPEndPoint ServerEndPoint { get; private set; }
+        public IPEndPoint ServerEndPoint { get; private set; }
 
-		public List<IPacketHandler> PacketHandlers
-		{
-			get
-			{
-				lock (_packetHandlers)
-				{
-					return _packetHandlers.ToList();
-				}
-			}
-		}
+        public List<IPacketHandler> PacketHandlers
+        {
+            get
+            {
+                lock (_packetHandlers)
+                {
+                    return _packetHandlers.ToList();
+                }
+            }
+        }
 
-		protected ServerConfiguration ServerConfig { get; private set; }
+        public bool AcceptingConnections { get; set; }
 
-		/// <summary>
-		/// Constructs a <see cref="StarServer"/> instance
-		/// </summary>
-		/// <param name="config">The configuration for this <see cref="StarServer"/></param>
-		/// <param name="connManager"></param>
-		public StarServer(ServerConfiguration config, StarProxyManager connManager)
-			: this(config, connManager, new Type[0])
-		{
-		}
+        protected ServerConfiguration ServerConfig { get; private set; }
 
-		/// <summary>
-		/// Constructs a <see cref="StarServer"/> instance
-		/// </summary>
-		/// <param name="config">The configuration for this <see cref="StarServer"/></param>
-		/// <param name="proxyManager"></param>
-		/// <param name="packetTypes">The packet types to be used by this server instance</param>
-		public StarServer(ServerConfiguration config, StarProxyManager proxyManager, Type[] packetTypes)
-			: this(config, proxyManager, packetTypes, new IPacketHandler[0])
-		{
-		}
+        /// <summary>
+        /// Constructs a <see cref="StarServer"/> instance
+        /// </summary>
+        /// <param name="config">The configuration for this <see cref="StarServer"/></param>
+        /// <param name="connManager"></param>
+        public StarServer(ServerConfiguration config, StarProxyManager connManager)
+            : this(config, connManager, new Type[0])
+        {
+        }
 
-		/// <summary>
-		/// Constructs a <see cref="StarServer"/> instance
-		/// </summary>
-		/// <param name="config">The configuration for this <see cref="StarServer"/></param>
-		/// <param name="proxyManager"></param>
-		/// <param name="packetTypes">The packet types to be used by this server instance</param>
-		/// <param name="packetHandlers">The packet handlers to be used by this server instance</param>
-		public StarServer(ServerConfiguration config, StarProxyManager proxyManager, Type[] packetTypes, IEnumerable<IPacketHandler> packetHandlers)
-		{
-			AddPacketTypes(packetTypes);
+        /// <summary>
+        /// Constructs a <see cref="StarServer"/> instance
+        /// </summary>
+        /// <param name="config">The configuration for this <see cref="StarServer"/></param>
+        /// <param name="proxyManager"></param>
+        /// <param name="packetTypes">The packet types to be used by this server instance</param>
+        public StarServer(ServerConfiguration config, StarProxyManager proxyManager, Type[] packetTypes)
+            : this(config, proxyManager, packetTypes, new IPacketHandler[0])
+        {
+        }
 
-			Proxies = proxyManager;
-			ServerConfig = config;
+        /// <summary>
+        /// Constructs a <see cref="StarServer"/> instance
+        /// </summary>
+        /// <param name="config">The configuration for this <see cref="StarServer"/></param>
+        /// <param name="proxyManager"></param>
+        /// <param name="packetTypes">The packet types to be used by this server instance</param>
+        /// <param name="packetHandlers">The packet handlers to be used by this server instance</param>
+        public StarServer(ServerConfiguration config, StarProxyManager proxyManager, Type[] packetTypes, IEnumerable<IPacketHandler> packetHandlers)
+        {
+            AddPacketTypes(packetTypes);
 
-			LocalEndPoint = new IPEndPoint(IPAddress.Parse(ServerConfig.BindAddress), ServerConfig.BindPort);
-			ServerEndPoint = new IPEndPoint(IPAddress.Parse(ServerConfig.ServerBindAddress), ServerConfig.ServerBindPort);
+            Proxies = proxyManager;
+            ServerConfig = config;
 
-			_packetHandlers = new List<IPacketHandler>();
-			_packetHandlers.AddRange(packetHandlers.Distinct());
+            LocalEndPoint = new IPEndPoint(IPAddress.Parse(ServerConfig.BindAddress), ServerConfig.BindPort);
+            ServerEndPoint = new IPEndPoint(IPAddress.Parse(ServerConfig.ServerBindAddress), ServerConfig.ServerBindPort);
 
-			_serverRunning = 0;
-		}
+            _packetHandlers = new List<IPacketHandler>();
+            _packetHandlers.AddRange(packetHandlers.Distinct());
 
-		/// <summary>
-		/// Adds a series of Packet types to be used by the proxies for processing Packets
-		/// </summary>
-		/// <param name="packetTypes">The types of Packet types to add</param>
-		public void AddPacketTypes(params Type[] packetTypes)
-		{
-			foreach (Type pType in packetTypes)
-			{
-				if (!typeof(Packet).IsAssignableFrom(pType))
-					throw new ArgumentException(string.Format("Invalid packet type {0}", pType.FullName), "packetTypes");
-			}
+            _serverRunning = 0;
+        }
 
-			_packetTypes = _packetTypes == null ? packetTypes : _packetTypes.Union(packetTypes).ToArray();
-		}
+        /// <summary>
+        /// Adds a series of Packet types to be used by the proxies for processing Packets
+        /// </summary>
+        /// <param name="packetTypes">The types of Packet types to add</param>
+        public void AddPacketTypes(params Type[] packetTypes)
+        {
+            foreach (Type pType in packetTypes)
+            {
+                if (!typeof(Packet).IsAssignableFrom(pType))
+                    throw new ArgumentException(string.Format("Invalid packet type {0}", pType.FullName), "packetTypes");
+            }
 
-		/// <summary>
-		/// Removes a set of Packet types<para/>
-		/// After removal, clients that connect will no longer use this packet type for processing
-		/// </summary>
-		/// <param name="packetTypes">The packet types to remove</param>
-		public void RemovePacketTypes(params Type[] packetTypes)
-		{
-			_packetTypes = _packetTypes.Except(packetTypes).ToArray();
-		}
+            _packetTypes = _packetTypes == null ? packetTypes : _packetTypes.Union(packetTypes).ToArray();
+        }
 
-		/// <summary>
-		/// Registers a set of packet handlers to be used by new connections
-		/// </summary>
-		/// <param name="handlers">The handlers to register</param>
-		public void AddPacketHandlers(IEnumerable<IPacketHandler> handlers)
-		{
-			var hList = handlers.ToList();
+        /// <summary>
+        /// Removes a set of Packet types<para/>
+        /// After removal, clients that connect will no longer use this packet type for processing
+        /// </summary>
+        /// <param name="packetTypes">The packet types to remove</param>
+        public void RemovePacketTypes(params Type[] packetTypes)
+        {
+            _packetTypes = _packetTypes.Except(packetTypes).ToArray();
+        }
 
-			lock (_packetHandlers)
-			{
-				_packetHandlers.RemoveAll(hList.Contains);
-				_packetHandlers.AddRange(hList);
-			}
-		}
+        /// <summary>
+        /// Registers a set of packet handlers to be used by new connections
+        /// </summary>
+        /// <param name="handlers">The handlers to register</param>
+        public void AddPacketHandlers(IEnumerable<IPacketHandler> handlers)
+        {
+            var hList = handlers.ToList();
 
-		public void AddPacketHandler(IPacketHandler handler)
-		{
-			AddPacketHandlers(new[] { handler });
-		}
+            lock (_packetHandlers)
+            {
+                _packetHandlers.RemoveAll(hList.Contains);
+                _packetHandlers.AddRange(hList);
+            }
+        }
 
-		/// <summary>
-		/// Removes a packet handler
-		/// </summary>
-		/// <param name="handler"></param>
-		public void RemovePacketHandler(IPacketHandler handler)
-		{
-			lock (_packetHandlers)
-			{
-				_packetHandlers.Remove(handler);
-			}
-		}
+        public void AddPacketHandler(IPacketHandler handler)
+        {
+            AddPacketHandlers(new[] { handler });
+        }
 
-		/// <summary>
-		/// Start listening for connections
-		/// </summary>
-		public virtual void StartServer()
-		{
-			if (ServerRunning)
-				throw new Exception("Server is already running!");
+        /// <summary>
+        /// Removes a packet handler
+        /// </summary>
+        /// <param name="handler"></param>
+        public void RemovePacketHandler(IPacketHandler handler)
+        {
+            lock (_packetHandlers)
+            {
+                _packetHandlers.Remove(handler);
+            }
+        }
 
-			ListenSocket = new Socket(LocalEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-			ListenSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-			ListenSocket.Bind(LocalEndPoint);
-			ListenSocket.Listen(ServerConfig.MaxConnections);
+        /// <summary>
+        /// Start listening for connections
+        /// </summary>
+        public virtual void StartServer()
+        {
+            if (ServerRunning)
+                throw new Exception("Server is already running!");
 
-			Interlocked.CompareExchange(ref _serverRunning, 1, 0);
+            //ListenSocket = new Socket(LocalEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            //ListenSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            //ListenSocket.Bind(LocalEndPoint);
+            //ListenSocket.Listen(ServerConfig.MaxConnections);
 
-			StartAccept(null);
-		}
+            AcceptingConnections = true;
 
-		/// <summary>
-		/// Stop listening for connections
-		/// </summary>
-		public virtual void StopServer()
-		{
-			if (!ServerRunning)
-				return;
+            Task.Run(() =>
+            {
+                ListenSocket = new TcpListener(LocalEndPoint.Address, LocalEndPoint.Port);
+                ListenSocket.Start();
 
-			foreach (StarProxy proxy in Proxies)
-			{
-				proxy.Close();
-			}
+                Interlocked.CompareExchange(ref _serverRunning, 1, 0);
 
-			Interlocked.CompareExchange(ref _serverRunning, 0, 1);
+                return StartAccept();
+            });
+        }
+        
+        /// <summary>
+        /// Stop listening for connections
+        /// </summary>
+        public virtual void StopServer()
+        {
+            if (!ServerRunning)
+                return;
 
-			ListenSocket.Close();
-			ListenSocket = null;
-		}
+            AcceptingConnections = false;
 
-		protected virtual void StartAccept(SocketAsyncEventArgs acceptEventArg)
-		{
-			try
-			{
-				if (acceptEventArg == null)
-				{
-					acceptEventArg = new SocketAsyncEventArgs();
-					acceptEventArg.Completed += AcceptEventArg_Completed;
-				}
-				else
-				{
-					acceptEventArg.AcceptSocket = null;
-				}
+            Parallel.ForEach(Proxies, proxy =>
+            {
+                proxy.Close();
+            });
 
-				try
-				{
-					bool willRaiseEvent = ListenSocket.AcceptAsync(acceptEventArg);
-					if (!willRaiseEvent)
-					{
-						ProcessAccept(acceptEventArg);
-					}
-				}
-				catch
-				{
-				}
-			}
-			catch (Exception ex)
-			{
-				ex.LogError();
-			}
-		}
+            Interlocked.CompareExchange(ref _serverRunning, 0, 1);
 
-		private void AcceptEventArg_Completed(object sender, SocketAsyncEventArgs e)
-		{
-			ProcessAccept(e);
-		}
+            ListenSocket.Stop();
+            ListenSocket = null;
+        }
 
-		protected void ProcessAccept(SocketAsyncEventArgs e)
-		{
-			if (ListenSocket == null)
-				return;
+        protected virtual async Task StartAccept()
+        {
+            try
+            {
+                TcpClient client = await ListenSocket.AcceptTcpClientAsync();
+                await ProcessAccept(client);
 
-			if (!e.AcceptSocket.Connected)
-			{
-				StartAccept(e);
+                //bool willRaiseEvent = ListenSocket.AcceptAsync(acceptEventArg);
+                //if (!willRaiseEvent)
+                //{
+                //	ProcessAccept(acceptEventArg);
+                //}
+            }
+            catch
+            {
+            }
 
-				return;
-			}
 
-			if (!ServerRunning)
-			{
-				return;
-			}
+            if (ServerRunning)
+                await StartAccept();
+        }
 
-			StarLog.DefaultLogger.Info("Connection from {0}", e.AcceptSocket.RemoteEndPoint);
+        protected async Task ProcessAccept(TcpClient client)
+        {
+            if (ListenSocket == null || !ServerRunning)
+                return;
 
-			if (_numConnected >= ServerConfig.MaxConnections)
-			{
-				e.AcceptSocket.Shutdown(SocketShutdown.Both);
-				e.AcceptSocket.Close();
+            if (!client.Connected)
+            {
+                await StartAccept();
 
-				StarLog.DefaultLogger.Warn("Exceeded maximum amount of users! Disconnecting {0}", e.AcceptSocket.RemoteEndPoint.ToString());
+                return;
+            }
 
-				return;
-			}
+            if (!AcceptingConnections)
+            {
+                client.Client.Shutdown(SocketShutdown.Both);
+                client.Client.Close();
 
-			Interlocked.Increment(ref _numConnected);
-			Interlocked.Increment(ref _totalJoined);
+                return;
+            }
 
-			try
-			{
-				StarClientConnection client = new StarClientConnection(e.AcceptSocket, _packetTypes);
-				client.RegisterPacketHandlers(_packetHandlers);
+            StarLog.DefaultLogger.Info("Connection from {0}", client.Client.RemoteEndPoint);
 
-				StarServerConnection server = new StarServerConnection(_packetTypes);
-				server.RegisterPacketHandlers(_packetHandlers);
+            if (_numConnected >= ServerConfig.MaxConnections)
+            {
+                StarLog.DefaultLogger.Warn("Exceeded maximum amount of users! Disconnecting {0}", client.Client.RemoteEndPoint);
 
-				StarProxy starProxy = new StarProxy(this, client, server);
-				starProxy.ConnectionClosed += (s, args) => Interlocked.Decrement(ref _numConnected);
+                client.Client.Shutdown(SocketShutdown.Both);
+                client.Client.Close();
 
-				Proxies.AddProxy(starProxy.ConnectionId, starProxy);
+                return;
+            }
 
-				starProxy.Start();
-			}
-			catch (Exception ex)
-			{
-				ex.LogError();
-			}
-			finally
-			{
-				StartAccept(e);
-			}
-		}
+            Interlocked.Increment(ref _numConnected);
+            Interlocked.Increment(ref _totalJoined);
 
-	}
+            try
+            {
+                client.NoDelay = true;
+
+                StarClientConnection cl = new StarClientConnection(client, _packetTypes);
+                cl.RegisterPacketHandlers(_packetHandlers);
+
+                StarServerConnection server = new StarServerConnection(_packetTypes);
+                server.RegisterPacketHandlers(_packetHandlers);
+
+                StarProxy starProxy = new StarProxy(this, cl, server);
+                starProxy.ConnectionClosed += (s, args) => Interlocked.Decrement(ref _numConnected);
+
+                Proxies.AddProxy(starProxy.ConnectionId, starProxy);
+
+                await starProxy.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                ex.LogError();
+            }
+        }
+    }
 }

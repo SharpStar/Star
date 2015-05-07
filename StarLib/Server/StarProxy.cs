@@ -26,181 +26,191 @@ using StarLib.Starbound;
 
 namespace StarLib.Server
 {
-	/// <summary>
-	/// Describes a proxy connection between the Starbound server and the client
-	/// </summary>
-	public class StarProxy : IDisposable
-	{
+    /// <summary>
+    /// Describes a proxy connection between the Starbound server and the client
+    /// </summary>
+    public class StarProxy : IDisposable
+    {
 
-		private long _running;
+        private long _running;
 
-		public Player Player { get; set; }
+        public Player Player { get; set; }
 
-		/// <summary>
-		/// The time that the client connected
-		/// </summary>
-		public DateTime ConnectionTime { get; protected set; }
+        /// <summary>
+        /// The time that the client connected
+        /// </summary>
+        public DateTime ConnectionTime { get; protected set; }
 
-		/// <summary>
-		/// Called when the connections have been closed
-		/// </summary>
-		public event EventHandler<ProxyConnectionEventArgs> ConnectionClosed;
+        /// <summary>
+        /// Called when the connections have been closed
+        /// </summary>
+        public event EventHandler<ProxyConnectionEventArgs> ConnectionClosed;
 
-		/// <summary>
-		/// The id of the connection
-		/// </summary>
-		public string ConnectionId { get; set; }
+        /// <summary>
+        /// The id of the connection
+        /// </summary>
+        public string ConnectionId { get; set; }
 
-		/// <summary>
-		/// The amount of time that the this proxy has been alive for
-		/// </summary>
-		public TimeSpan Duration
-		{
-			get
-			{
-				return DateTime.UtcNow - ConnectionTime;
-			}
-		}
+        /// <summary>
+        /// The amount of time that the this proxy has been alive for
+        /// </summary>
+        public TimeSpan Duration
+        {
+            get
+            {
+                return DateTime.Now - ConnectionTime;
+            }
+        }
 
-		public bool IsDisposed { get; private set; }
+        public bool IsDisposed { get; private set; }
 
-		public bool Connected
-		{
-			get
-			{
-				return (ClientConnection != null && ClientConnection.Connected) && (ServerConnection != null && ServerConnection.Connected);
-			}
-		}
+        public bool Connected
+        {
+            get
+            {
+                return (ClientConnection != null && ClientConnection.Connected) && (ServerConnection != null && ServerConnection.Connected);
+            }
+        }
 
-		public bool Running
-		{
-			get
-			{
-				return Interlocked.Read(ref _running) == 1;
-			}
-		}
+        public bool Running
+        {
+            get
+            {
+                return Interlocked.Read(ref _running) == 1;
+            }
+        }
 
-		public StarServer ListeningServer { get; private set; }
+        public StarServer ListeningServer { get; private set; }
 
-		/// <summary>
-		/// The proxy to the Starbound client
-		/// </summary>
-		public StarConnection ClientConnection { get; set; }
+        /// <summary>
+        /// The proxy to the Starbound client
+        /// </summary>
+        public StarConnection ClientConnection { get; set; }
 
-		/// <summary>
-		/// The proxy to the Starbound server
-		/// </summary>
-		public StarConnection ServerConnection { get; set; }
+        /// <summary>
+        /// The proxy to the Starbound server
+        /// </summary>
+        public StarConnection ServerConnection { get; set; }
 
-		/// <summary>
-		/// Constructs a <see cref="StarProxy"/> object
-		/// </summary>
-		/// <param name="server">The Star server</param>
-		/// <param name="clientConn">The Starbound client connection</param>
-		/// <param name="serverConn">The Starbound server connection</param>
-		public StarProxy(StarServer server, StarConnection clientConn, StarConnection serverConn)
-		{
-			if (server == null)
-				throw new ArgumentNullException("server");
+        /// <summary>
+        /// Constructs a <see cref="StarProxy"/> object
+        /// </summary>
+        /// <param name="server">The Star server</param>
+        /// <param name="clientConn">The Starbound client connection</param>
+        /// <param name="serverConn">The Starbound server connection</param>
+        public StarProxy(StarServer server, StarConnection clientConn, StarConnection serverConn)
+        {
+            if (server == null)
+                throw new ArgumentNullException("server");
 
-			if (clientConn == null)
-				throw new ArgumentNullException("clientConn");
+            if (clientConn == null)
+                throw new ArgumentNullException("clientConn");
 
-			if (serverConn == null)
-				throw new ArgumentNullException("serverConn");
+            if (serverConn == null)
+                throw new ArgumentNullException("serverConn");
 
-			_running = 0;
+            _running = 0;
 
-			ListeningServer = server;
+            ListeningServer = server;
 
-			ConnectionId = Guid.NewGuid().ToString();
+            ConnectionId = Guid.NewGuid().ToString();
 
-			ClientConnection = clientConn;
-			ClientConnection.OtherConnection = serverConn;
-			ClientConnection.Proxy = this;
-			ClientConnection.Disconnected += Disconnected;
+            ClientConnection = clientConn;
+            ClientConnection.OtherConnection = serverConn;
+            ClientConnection.Proxy = this;
+            ClientConnection.Disconnected += Disconnected;
 
-			ServerConnection = serverConn;
-			ServerConnection.OtherConnection = clientConn;
-			ServerConnection.Proxy = this;
-			ServerConnection.Disconnected += Disconnected;
+            ServerConnection = serverConn;
+            ServerConnection.OtherConnection = clientConn;
+            ServerConnection.Proxy = this;
+            ServerConnection.Disconnected += Disconnected;
 
-			Player = new Player { Proxy = this };
-		}
+            Player = new Player { Proxy = this };
+        }
 
-		/// <summary>
-		/// Starts the proxies
-		/// </summary>
-		public void Start()
-		{
-			if (Running)
-				throw new InvalidOperationException("This proxy is already running!");
+        public void Start()
+        {
+            StartAsync();
+        }
 
-			Interlocked.CompareExchange(ref _running, 1, 0);
+        /// <summary>
+        /// Starts the proxies
+        /// </summary>
+        public Task StartAsync()
+        {
+            if (Running)
+                throw new InvalidOperationException("This proxy is already running!");
 
-			ConnectionTime = DateTime.UtcNow;
-			ServerConnection.Start();
-			ClientConnection.Start();
-		}
+            Interlocked.CompareExchange(ref _running, 1, 0);
 
-		/// <summary>
-		/// Closes the connections
-		/// </summary>
-		public void Close()
-		{
-			if (!IsDisposed && Running)
-			{
-				if (ClientConnection != null && !ClientConnection.IsDisposed && ClientConnection.Connected)
-				{
-					ClientConnection.Stop();
-				}
+            ConnectionTime = DateTime.Now;
+            Task serverTask = ServerConnection.StartAsync();
+            Task clientTask = ClientConnection.StartAsync();
 
-				if (ServerConnection != null && !ServerConnection.IsDisposed && ServerConnection.Connected)
-				{
-					ServerConnection.Stop();
-				}
-			}
-		}
+            //return Task.WhenAll(serverTask, clientTask);
+            return Task.FromResult(true);
+        }
 
-		private void Disconnected(object sender, EventArgs e)
-		{
-			if (Running)
-			{
-				Close();
+        public void Close()
+        {
+            CloseAsync().Wait();
+        }
 
-				if (ConnectionClosed != null && ClientConnection != null && ServerConnection != null && !ClientConnection.Connected && !ServerConnection.Connected)
-				{
-					Interlocked.CompareExchange(ref _running, 0, 1);
+        /// <summary>
+        /// Closes the connections
+        /// </summary>
+        public async Task CloseAsync()
+        {
+            if (!IsDisposed && Running)
+            {
+                if (ClientConnection != null && !ClientConnection.IsDisposed && ClientConnection.Connected)
+                {
+                    await ClientConnection.StopAsync();
+                }
 
-					if (ConnectionClosed != null)
-						ConnectionClosed(this, new ProxyConnectionEventArgs(this));
-				}
-			}
-		}
+                if (ServerConnection != null && !ServerConnection.IsDisposed && ServerConnection.Connected)
+                {
+                    await ServerConnection.StopAsync();
+                }
+            }
+        }
 
-		public void Dispose()
-		{
-			Dispose(true);
+        private async void Disconnected(object sender, EventArgs e)
+        {
+            if (Running)
+            {
+                Interlocked.CompareExchange(ref _running, 0, 1);
 
-			GC.SuppressFinalize(this);
-		}
+                await CloseAsync();
 
-		protected virtual void Dispose(bool disposing)
-		{
-			if (disposing)
-			{
-				Close();
-			}
+                if (ConnectionClosed != null)
+                    ConnectionClosed(this, new ProxyConnectionEventArgs(this));
+            }
+        }
 
-			IsDisposed = true;
+        public void Dispose()
+        {
+            Dispose(true);
 
-			ClientConnection = null;
-			ServerConnection = null;
-		}
+            GC.SuppressFinalize(this);
+        }
 
-		~StarProxy()
-		{
-			Dispose(false);
-		}
-	}
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Close();
+            }
+
+            IsDisposed = true;
+
+            ClientConnection = null;
+            ServerConnection = null;
+        }
+
+        ~StarProxy()
+        {
+            Dispose(false);
+        }
+    }
 }

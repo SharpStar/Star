@@ -101,6 +101,9 @@ namespace SharpStar.Server
 
         protected void RegisterAccountCheck(StarProxy proxy)
         {
+            if (!proxy.Connected || proxy.ServerConnection == null || proxy.ClientConnection == null)
+                return;
+
             var sEvt = Observable.FromEventPattern<PacketEventArgs>(p => proxy.ServerConnection.PacketReceived += p,
                     p => proxy.ServerConnection.PacketReceived -= p).Select(p => p.EventArgs);
             var cEvt = Observable.FromEventPattern<PacketEventArgs>(p => proxy.ClientConnection.PacketReceived += p,

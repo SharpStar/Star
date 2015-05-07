@@ -21,26 +21,26 @@ using StarLib.Starbound.Entities;
 
 namespace StarLib.Packets.Starbound
 {
-	public class SpawnEntityPacket : Packet
-	{
+	//public class SpawnEntityPacket : Packet
+	//{
 
-		public override byte PacketId
-		{
-			get
-			{
-				return (byte)PacketType.SpawnEntity;
-			}
-			protected set
-			{
-				throw new NotImplementedException();
-			}
-		}
+	//	public override byte PacketId
+	//	{
+	//		get
+	//		{
+	//			return (byte)PacketType.SpawnEntity;
+	//		}
+	//		protected set
+	//		{
+	//			throw new NotImplementedException();
+	//		}
+	//	}
 
-		[StarSerialize(0)]
-		public EntityType EntityType { get; set; }
+	//	[StarSerialize(0)]
+	//	public EntityType EntityType { get; set; }
 
-		[Greedy]
-		[StarSerialize(1)]
-		public IList<byte> StoreData { get; set; }
-	}
+	//	[Greedy]
+	//	[StarSerialize(1)]
+	//	public IList<byte> StoreData { get; set; }
+	//}
 }

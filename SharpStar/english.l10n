@@ -47,6 +47,13 @@ WarpToWorldCommandHelp=Syntax: worldwarp <uuid> <coordinates> <spawn x> <spawn y
 WarpToWorldCommandSpawnXYInvalid=Invalid x, y spawn values!
 WarpToWorldCommandParseError=Invalid coordinates!
 
+BanHammerCommandName=starban
+BanHammerCommandDesc=Bans a player using the mighty banhammer
+BanHammerCommandHelp=Syntax: starban <uuid> <reason> <time(default=forever)>
+
+BanReasonMessage=You have been banned from this server!\nReason: {0}\nExpiration Date: {1}
+BanMessageExpirationDateFormat=MM-dd-yy hh:mm
+
 #Player Commands
 
 PlayerCommandChatName=Star

@@ -20,22 +20,22 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-    public class TileModificationFailurePacket : Packet
-    {
-        public override byte PacketId
-        {
-            get
-            {
-                return (byte)PacketType.TileModificationFailure;
-            }
-            protected set
-            {
-                throw new NotImplementedException();
-            }
-        }
+  //  public class TileModificationFailurePacket : Packet
+  //  {
+  //      public override byte PacketId
+  //      {
+  //          get
+  //          {
+  //              return (byte)PacketType.TileModificationFailure;
+  //          }
+  //          protected set
+  //          {
+  //              throw new NotImplementedException();
+  //          }
+  //      }
 
-        [StarSerialize(0)]
-		[Greedy]
-		public IList<byte> ModificationList { get; set; } //TODO Implement me.
-    }
+  //      [StarSerialize(0)]
+		//[Greedy]
+		//public IList<byte> ModificationList { get; set; } //TODO Implement me.
+  //  }
 }

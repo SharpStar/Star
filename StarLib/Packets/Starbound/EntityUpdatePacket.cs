@@ -20,25 +20,25 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-	public class EntityUpdatePacket : Packet
-	{
-		public override byte PacketId
-		{
-			get
-			{
-				return (byte)PacketType.EntityUpdate;
-			}
-			protected set
-			{
-				throw new NotImplementedException();
-			}
-		}
+    public class EntityUpdatePacket : Packet
+    {
+        public override byte PacketId
+        {
+            get
+            {
+                return (byte)PacketType.EntityUpdate;
+            }
+            protected set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
-		[StarSerialize(0)]
-		public int EntityId { get; set; }
-		
-		[StarSerialize(1)]
-		[Greedy]
-		public IList<byte> Delta { get; set; }
-	}
+        [StarSerialize(0)]
+        public int EntityId { get; set; }
+
+        [StarSerialize(1)]
+        [Greedy]
+        public IList<byte> Delta { get; set; }
+    }
 }

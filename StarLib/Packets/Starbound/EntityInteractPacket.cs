@@ -20,27 +20,27 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-    class EntityInteractPacket :Packet
-    {
-        public override byte PacketId
-        {
-            get
-            {
-                return (byte)PacketType.EntityInteract;
-            }
-            protected set
-            {
-                throw new NotImplementedException();
-            }
-        }
+    //public class EntityInteractPacket :Packet
+    //{
+    //    public override byte PacketId
+    //    {
+    //        get
+    //        {
+    //            return (byte)PacketType.EntityInteract;
+    //        }
+    //        protected set
+    //        {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
 
-        [StarSerialize(0)]
-        public int SourceEntityId { get; set; }
+    //    [StarSerialize(0)]
+    //    public int SourceEntityId { get; set; }
 
-        [StarSerialize(1)]
-        public Vec2F SourcePosition { get; set; }
+    //    [StarSerialize(1)]
+    //    public Vec2F SourcePosition { get; set; }
 
-        [StarSerialize(2)]
-        public int TargetEntityId { get; set; }
-    }
+    //    [StarSerialize(2)]
+    //    public int TargetEntityId { get; set; }
+    //}
 }

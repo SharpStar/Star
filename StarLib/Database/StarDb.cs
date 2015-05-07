@@ -62,6 +62,34 @@ namespace StarLib.Database
                 conn.CreateTableIfNotExists<Permission>();
                 conn.CreateTableIfNotExists<Character>();
                 conn.CreateTableIfNotExists<Ban>();
+                conn.CreateTableIfNotExists<EventHistory>();
+                conn.CreateTableIfNotExists<EventType>();
+            }
+        }
+
+        public bool AddCharacter(string name, string uuid, int? accountId)
+        {
+            using (var conn = CreateConnection())
+            {
+                if (conn.Count<Character>(p => p.Uuid == uuid) > 0)
+                    return false;
+
+                conn.Save(new Character
+                {
+                    Name = name,
+                    Uuid = uuid,
+                    AccountId = accountId
+                });
+            }
+
+            return true;
+        }
+
+        public void SaveCharacter(Character character)
+        {
+            using (var conn = CreateConnection())
+            {
+                conn.Save(character);
             }
         }
 
@@ -113,29 +141,40 @@ namespace StarLib.Database
         {
             using (var conn = CreateConnection())
             {
-                conn.Save(account);
+                conn.SaveAllReferences(account);
             }
         }
 
-        public bool AddBan(Player player, bool includeAccount = true)
+        public bool AddBan(string playerName, string playerUuid, int? accountId, DateTime expirationTime, string reason = "")
         {
             using (var conn = CreateConnection())
             {
-                if (player.Account != null && includeAccount && conn.Count<Ban>(p => p.AccountId == player.Account.Id) > 0)
+                if (accountId.HasValue && conn.Count<Ban>(p => p.AccountId == accountId) > 0)
                     return false;
 
-                if (conn.Count<Ban>(p => p.Uuid == player.Uuid.Id) > 0)
+                if (conn.Count<Ban>(p => p.Uuid == playerUuid) > 0)
                     return false;
 
                 conn.Save(new Ban
                 {
-                    PlayerName = player.Name,
-                    Uuid = player.Uuid.Id,
-                    AccountId = (includeAccount && player.Account != null) ? player.Account.Id : (int?)null
+                    PlayerName = playerName,
+                    Uuid = playerUuid,
+                    AccountId = accountId,
+                    ExpirationTime = expirationTime,
+                    Reason = reason,
+                    Active = true
                 });
             }
 
             return true;
+        }
+
+        public void SaveBan(Ban ban)
+        {
+            using (var conn = CreateConnection())
+            {
+                conn.Save(ban);
+            }
         }
 
         public bool RemoveBanByAccount(int accountId)
@@ -254,6 +293,42 @@ namespace StarLib.Database
             using (var conn = CreateConnection())
             {
                 conn.Save(group);
+            }
+        }
+
+        public void AddEvent(string text, string[] eventTypes, int? accountId = null)
+        {
+            using (var conn = CreateConnection())
+            {
+                EventHistory evt = new EventHistory
+                {
+                    Text = text,
+                    AccountId = accountId,
+                    EventTypes = new List<EventType>()
+                };
+
+                foreach (string type in eventTypes)
+                {
+                    EventType evtType = conn.Single<EventType>(new
+                    {
+                        Name = type
+                    });
+
+                    if (evtType != null)
+                        evt.EventTypes.Add(evtType);
+                    else
+                        evt.EventTypes.Add(new EventType { Name = type });
+                }
+
+                conn.SaveAllReferences(evt);
+            }
+        }
+
+        public void SaveEvent(EventHistory evt)
+        {
+            using (var conn = CreateConnection())
+            {
+                conn.Save(evt);
             }
         }
     }

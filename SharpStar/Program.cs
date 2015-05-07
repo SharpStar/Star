@@ -92,9 +92,10 @@ namespace SharpStar
 
         static void Main(string[] args)
         {
-            XmlConfigurator.Configure();
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
+
+            XmlConfigurator.Configure();
 
             _configFile = new JsonFileConfiguration<SharpConfig>("sharpconfig.json", new JsonSerializerSettings());
             _configFile.Load();
@@ -224,6 +225,8 @@ namespace SharpStar
 
             _shutdown = true;
 
+            StarMain.Instance.Server.AcceptingConnections = false;
+
             Log.Info("Shutting down...");
 
             string reason = StarMain.Instance.CurrentLocalization["Shutdown"];
@@ -253,7 +256,11 @@ namespace SharpStar
             ((Exception)e.ExceptionObject).LogError();
 
             if (e.IsTerminating)
+            {
+                StarLog.DefaultLogger.Warn("Unhandled exception, cannot recover! Shutting down...");
+
                 Shutdown();
+            }
         }
 
         private static ConsoleCommand[] CreateConsoleCommands()
@@ -267,7 +274,8 @@ namespace SharpStar
                 new ReloadConfigsCommand(),
                 new UuidOfCommand(),
                 new BroadcastCommand(),
-                new WarpToWorldCommand()
+                new WarpToWorldCommand(),
+                new BanHammerCommand()
             };
         }
 
