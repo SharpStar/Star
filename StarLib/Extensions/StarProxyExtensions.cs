@@ -29,11 +29,17 @@ namespace StarLib.Extensions
     {
         public static void SendChatMessage(this StarProxy proxy, string name, string message, int maxCharsPerLine = 60)
         {
+            proxy.SendChatMessageAsync(name, message, maxCharsPerLine).Wait();
+        }
+
+
+        public static async Task SendChatMessageAsync(this StarProxy proxy, string name, string message, int maxCharsPerLine = 60)
+        {
             foreach (string line in message.SeparateString(maxCharsPerLine))
             {
                 foreach (string line2 in line.Split('\n'))
                 {
-                    proxy.ClientConnection.SendPacket(new ChatReceivePacket
+                    await proxy.ClientConnection.SendPacketAsync(new ChatReceivePacket
                     {
                         Name = name,
                         Message = line2,
@@ -44,6 +50,11 @@ namespace StarLib.Extensions
 
         public static void Kick(this StarProxy proxy, string reason = "")
         {
+            proxy.KickAsync(reason).Wait();
+        }
+
+        public static async Task KickAsync(this StarProxy proxy, string reason = "")
+        {
             EventHandler<PacketEventArgs> handler = (s, e) =>
             {
                 if (!(e.Packet is ServerDisconnectPacket))
@@ -51,10 +62,10 @@ namespace StarLib.Extensions
                     e.Packet.Ignore = true;
                 }
             };
-            
+
             proxy.ClientConnection.PacketSending += handler;
-            proxy.ServerConnection.SendPacket(new ClientDisconnectRequestPacket());
-            proxy.ClientConnection.SendPacket(new ServerDisconnectPacket
+            await proxy.ServerConnection.SendPacketAsync(new ClientDisconnectRequestPacket());
+            await proxy.ClientConnection.SendPacketAsync(new ServerDisconnectPacket
             {
                 Reason = reason
             });

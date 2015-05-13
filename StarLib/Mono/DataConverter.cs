@@ -16,12 +16,12 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
 using System.Collections;
-using System.Text;
 using System.Collections.Generic;
+using System.Text;
 
 #pragma warning disable 3021
 
-namespace Mono
+namespace StarLib.Mono
 {
 
 #if MONO_DATACONVERTER_PUBLIC

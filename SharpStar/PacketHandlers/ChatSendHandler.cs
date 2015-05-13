@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using StarLib;
 using StarLib.Commands.PlayerEvent;
+using StarLib.Logging;
 using StarLib.Packets;
 using StarLib.Packets.Starbound;
 using StarLib.Plugins;
@@ -35,7 +36,7 @@ namespace SharpStar.PacketHandlers
 			if (packet.Text.StartsWith("/"))
 			{
 				string command = packet.Text.Substring(1);
-
+                
 				bool found = false;
 
 				foreach (PlayerEventCommand cmd in Program.PlayerCommands)

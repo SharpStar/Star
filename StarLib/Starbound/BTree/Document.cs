@@ -19,6 +19,7 @@ using System.IO;
 using Mono;
 using StarLib.DataTypes;
 using StarLib.DataTypes.Variant;
+using StarLib.Mono;
 using StarLib.Networking;
 using StarLib.Packets.Serialization;
 

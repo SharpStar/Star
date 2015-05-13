@@ -147,6 +147,8 @@ namespace StarLib
             LoadPlugins();
 
             _log.Info("Starting server...");
+            
+            _log.Info("Binding server to {0}:{1}", ServerConfig.BindAddress, ServerConfig.BindPort);
 
             Server.StartServer();
 

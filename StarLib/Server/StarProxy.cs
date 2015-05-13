@@ -134,7 +134,7 @@ namespace StarLib.Server
         }
 
         /// <summary>
-        /// Starts the proxies
+        /// Starts the connnections
         /// </summary>
         public Task StartAsync()
         {
@@ -147,8 +147,8 @@ namespace StarLib.Server
             Task serverTask = ServerConnection.StartAsync();
             Task clientTask = ClientConnection.StartAsync();
 
-            //return Task.WhenAll(serverTask, clientTask);
-            return Task.FromResult(true);
+            return Task.WhenAll(serverTask, clientTask);
+            //return Task.FromResult(true);
         }
 
         public void Close()

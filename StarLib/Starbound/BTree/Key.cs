@@ -15,11 +15,9 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
-namespace SharpStar.Lib.Starbound
+namespace StarLib.Starbound.BTree
 {
     public class Key : IEquatable<Key>
     {
@@ -60,7 +58,7 @@ namespace SharpStar.Lib.Starbound
             return new Key(signature);
         }
 
-        public static implicit operator byte[](Key key)
+        public static implicit operator byte[] (Key key)
         {
             return key.TheKey;
         }

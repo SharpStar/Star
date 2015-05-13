@@ -15,8 +15,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +41,6 @@ using StarLib.Localization;
 using StarLib.Logging;
 using StarLib.Mono;
 using StarLib.Packets;
-using StarLib.Server;
 
 namespace SharpStar
 {
@@ -89,7 +90,8 @@ namespace SharpStar
                 return _createPlayerCommands.Value;
             }
         }
-
+        
+        [HandleProcessCorruptedStateExceptions]
         static void Main(string[] args)
         {
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
@@ -100,7 +102,14 @@ namespace SharpStar
             _configFile = new JsonFileConfiguration<SharpConfig>("sharpconfig.json", new JsonSerializerSettings());
             _configFile.Load();
 
-            Run();
+            try
+            {
+                Run();
+            }
+            catch (Exception ex)
+            {
+                ex.LogError();
+            }
 
             if (StarMain.Instance.ServerConfig.RunAsService)
             {
@@ -130,7 +139,7 @@ namespace SharpStar
                 NativeMethods.SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
             }
 
-            while (true)
+            while (!_shutdown)
             {
                 try
                 {
@@ -139,7 +148,11 @@ namespace SharpStar
                     if (input != null)
                     {
                         if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
-                            Shutdown();
+                        {
+                            Shutdown(false);
+
+                            break;
+                        }
 
                         StarMain.Instance.ConsoleCommandManager.TryPassConsoleCommand(input);
                     }
@@ -155,17 +168,10 @@ namespace SharpStar
             Log.Info("SharpStar Version {0}.{1}.{2}.{3}", SharpStarVersion.Major, SharpStarVersion.Minor, SharpStarVersion.Build, SharpStarVersion.Revision);
             Log.Info("Star Version {0}.{1}.{2}.{3}", StarVersion.Major, StarVersion.Minor, StarVersion.Build, StarVersion.Revision);
 
-            Thread starThread = new Thread(() =>
-            {
-                StarClientManager scm = new StarClientManager();
-                scm.StartWatchingProxies();
+            StarClientManager scm = new StarClientManager();
+            scm.StartWatchingProxies();
 
-                SetupStar();
-            });
-
-            starThread.Name = "Star";
-
-            starThread.Start();
+            SetupStar();
         }
 
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
@@ -178,28 +184,17 @@ namespace SharpStar
             StarMain.Instance.CurrentLocalization = new SimpleLocalizationFile("english.l10n");
             StarMain.Instance.Init();
 
-            StarMain.Instance.ShutdownInitiated += ShutdownInitiated;
             StarMain.Instance.ConsoleCommandManager.AddCommands(ConsoleCommandsToAdd);
             StarMain.Instance.Server.AddPacketHandlers(HandlersToAdd);
 
             StarMain.Instance.Start();
         }
 
-        private static void ShutdownInitiated(object sender, EventArgs e)
-        {
-            Log.Info("Kicking all players...");
-
-            foreach (StarProxy proxy in StarMain.Instance.Server.Proxies)
-            {
-                proxy.Kick(StarMain.Instance.CurrentLocalization["Shutdown"]);
-            }
-        }
-
         private static bool ConsoleCtrlCheck(CtrlTypes ctrlType)
         {
-            Shutdown();
+            Shutdown(false);
 
-            return true;
+            return false;
         }
 
         private static void WaitForUnixExit()
@@ -210,12 +205,12 @@ namespace SharpStar
                 new UnixSignal (Signum.SIGTERM)
             };
 
-            new Thread(() =>
+            Task.Run(() =>
             {
                 UnixSignal.WaitAny(signals, -1);
 
                 Shutdown();
-            }).Start();
+            });
         }
 
         public static void Shutdown(bool exit = true)
@@ -233,22 +228,26 @@ namespace SharpStar
 
             if (!string.IsNullOrEmpty(reason))
             {
-                foreach (StarProxy proxy in StarMain.Instance.Server.Proxies)
+                Parallel.ForEach(StarMain.Instance.Server.Proxies, async proxy =>
                 {
-                    proxy.Kick(reason);
-                }
+                    await proxy.KickAsync(reason);
+                });
             }
 
             StarMain.Instance.Shutdown();
 
             if (exit)
-                Environment.Exit(0);
+            {
+                Log.Info("Shutdown complete!");
+
+                Process.GetCurrentProcess().Kill();
+            }
         }
 
         private static void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
         {
-            e.SetObserved();
             e.Exception.LogError();
+            e.SetObserved();
         }
 
         private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -259,7 +258,7 @@ namespace SharpStar
             {
                 StarLog.DefaultLogger.Warn("Unhandled exception, cannot recover! Shutting down...");
 
-                Shutdown();
+                Shutdown(false);
             }
         }
 

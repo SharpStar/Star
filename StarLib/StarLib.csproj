@@ -22,6 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -63,18 +64,6 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.AsyncEx, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Concurrent, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Concurrent.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Enlightenment, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="ServiceStack.Common, Version=4.0.38.0, Culture=neutral, processorArchitecture=MSIL">
@@ -126,10 +115,6 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Zlib.Portable, Version=1.10.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Zlib.Portable.1.10.0\lib\portable-net4+sl5+wp8+win8+wpa81+MonoTouch+MonoAndroid\Zlib.Portable.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Commands\Command.cs" />
@@ -177,6 +162,9 @@
     <Compile Include="DataTypes\Vec2I.cs" />
     <Compile Include="DataTypes\Vec3I.cs" />
     <Compile Include="DataTypes\VLQ.cs" />
+    <Compile Include="Events\AsyncEventMethod.cs" />
+    <Compile Include="Events\IEventMethod.cs" />
+    <Compile Include="Events\IEventObject.cs" />
     <Compile Include="Events\Packets\PacketEventKey.cs" />
     <Compile Include="Events\Packets\PacketEventType.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
@@ -259,7 +247,6 @@
     <Compile Include="Events\Packets\PacketEvent.cs" />
     <Compile Include="Events\Packets\PacketEventAttribute.cs" />
     <Compile Include="Events\Packets\PacketEventManager.cs" />
-    <Compile Include="Events\Packets\PacketEventMethod.cs" />
     <Compile Include="Events\StarEvent.cs" />
     <Compile Include="Extensions\StarProxyExtensions.cs" />
     <Compile Include="Extensions\ExceptionExtensions.cs" />
@@ -327,6 +314,8 @@
     <Compile Include="Starbound\World\UniqueWorldId.cs" />
     <Compile Include="StarMain.cs" />
     <Compile Include="Starbound\RecvMessageType.cs" />
+    <Compile Include="Utils\Adler.cs" />
+    <Compile Include="Utils\ZLib.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -20,12 +20,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace StarLib.Events.Packets
+namespace StarLib.Events
 {
-	public class PacketEventMethod : EventMethod<PacketEventKey, PacketEvent>
-	{
-		public PacketEventMethod(PacketEventKey key, Action<PacketEvent> executor) : base(key, executor)
-		{
-		}
-	}
+    public interface IEventObject<TKey, TVal> where TKey : IEquatable<TKey> where TVal : StarEvent
+    {
+        object EventObj { get; }
+    }
 }

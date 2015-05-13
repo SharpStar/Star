@@ -31,6 +31,7 @@ namespace StarLib.Plugins
         public abstract void ReloadPlugins();
         public abstract bool PassCommand(string command, Player player);
 	    public abstract void PassPacketEvent(byte packetId, PacketEvent evt, PacketEventType evtType);
+        public abstract Task PassPacketEventAsync(byte packetId, PacketEvent evt, PacketEventType evtType);
         public abstract IPlugin[] GetPlugins();
     }
 }

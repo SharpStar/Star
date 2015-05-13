@@ -20,78 +20,78 @@ using System.Linq;
 
 namespace StarLib.Starbound.BTree
 {
-	public class LeafReader
-	{
-		public SBBF03 File { get; protected set; }
+    public class LeafReader
+    {
+        public SBBF03 File { get; protected set; }
 
-		public BTreeLeaf Leaf { get; protected set; }
+        public BTreeLeaf Leaf { get; protected set; }
 
-		public int Offset { get; protected set; }
+        public int Offset { get; protected set; }
 
-		public List<int> Visited { get; protected set; }
+        public List<int> Visited { get; protected set; }
 
-		public LeafReader(SBBF03 sb, BTreeLeaf leaf)
-		{
-			File = sb;
-			Leaf = leaf;
-			Offset = 0;
-			Visited = new List<int>(new[] { leaf.Index });
-		}
+        public LeafReader(SBBF03 sb, BTreeLeaf leaf)
+        {
+            File = sb;
+            Leaf = leaf;
+            Offset = 0;
+            Visited = new List<int>(new[] { leaf.Index });
+        }
 
-		public virtual byte[] Read(int length)
-		{
+        public virtual byte[] Read(int length)
+        {
 
-			int offset = Offset;
+            int offset = Offset;
 
-			if (offset + length <= Leaf.Data.Length)
-			{
-				Offset += length;
+            if (offset + length <= Leaf.Data.Length)
+            {
+                Offset += length;
 
-				return Leaf.Data.Skip(offset).Take(length).ToArray();
-			}
+                return Leaf.Data.Skip(offset).Take(length).ToArray();
+            }
 
-			byte[] data;
+            byte[] data;
 
-			using (MemoryStream ms = new MemoryStream())
-			{
-				using (BinaryWriter writer = new BinaryWriter(ms))
-				{
-					byte[] buf = Leaf.Data.Skip(offset).ToArray();
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (BinaryWriter writer = new BinaryWriter(ms))
+                {
+                    byte[] buf = Leaf.Data.Skip(offset).ToArray();
 
-					writer.Write(buf, 0, buf.Length);
+                    writer.Write(buf, 0, buf.Length);
 
-					int numRead = buf.Length;
+                    int numRead = buf.Length;
 
-					length -= numRead;
+                    length -= numRead;
 
-					while (length > 0)
-					{
-						if (!Leaf.NextBlock.HasValue)
-							break;
+                    while (length > 0)
+                    {
+                        if (!Leaf.NextBlock.HasValue)
+                            break;
 
-						int nextBlock = Leaf.NextBlock.Value;
+                        int nextBlock = Leaf.NextBlock.Value;
 
-						Visited.Add(nextBlock);
+                        Visited.Add(nextBlock);
 
-						Leaf = (BTreeLeaf)File.GetBlock(nextBlock);
+                        Leaf = (BTreeLeaf)File.GetBlock(nextBlock);
 
-						byte[] buf2 = Leaf.Data.Take(length).ToArray();
+                        byte[] buf2 = Leaf.Data.Take(length).ToArray();
 
-						writer.Write(buf2);
+                        writer.Write(buf2);
 
-						numRead = buf2.Length;
-						length -= numRead;
-					}
+                        numRead = buf2.Length;
+                        length -= numRead;
+                    }
 
-					Offset = numRead;
+                    Offset = numRead;
 
-					data = ms.ToArray();
-				}
+                    data = ms.ToArray();
+                }
 
-			}
+            }
 
-			return data;
+            return data;
 
-		}
-	}
+        }
+    }
 }

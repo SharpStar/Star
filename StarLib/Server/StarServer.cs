@@ -109,8 +109,21 @@ namespace StarLib.Server
             Proxies = proxyManager;
             ServerConfig = config;
 
-            LocalEndPoint = new IPEndPoint(IPAddress.Parse(ServerConfig.BindAddress), ServerConfig.BindPort);
-            ServerEndPoint = new IPEndPoint(IPAddress.Parse(ServerConfig.ServerBindAddress), ServerConfig.ServerBindPort);
+            IPAddress bindAddress;
+            IPAddress serverAddress;
+
+            if (ServerConfig.BindAddress == "0.0.0.0")
+                bindAddress = IPAddress.Any;
+            else
+                bindAddress = IPAddress.Parse(ServerConfig.BindAddress);
+
+            if (ServerConfig.ServerBindAddress == "127.0.0.1")
+                serverAddress = IPAddress.Loopback;
+            else
+                serverAddress = IPAddress.Parse(ServerConfig.ServerBindAddress);
+
+            LocalEndPoint = new IPEndPoint(bindAddress, ServerConfig.BindPort);
+            ServerEndPoint = new IPEndPoint(serverAddress, ServerConfig.ServerBindPort);
 
             _packetHandlers = new List<IPacketHandler>();
             _packetHandlers.AddRange(packetHandlers.Distinct());
@@ -193,14 +206,25 @@ namespace StarLib.Server
             Task.Run(() =>
             {
                 ListenSocket = new TcpListener(LocalEndPoint.Address, LocalEndPoint.Port);
-                ListenSocket.Start();
+                ListenSocket.Server.NoDelay = true;
+                //ListenSocket.Server.ReceiveBufferSize = 2048;
+                //ListenSocket.Server.SendBufferSize = 2048;
+
+                try
+                {
+                    ListenSocket.Start();
+                }
+                catch (Exception ex)
+                {
+                    ex.LogError();
+                }
 
                 Interlocked.CompareExchange(ref _serverRunning, 1, 0);
 
                 return StartAccept();
             });
         }
-        
+
         /// <summary>
         /// Stop listening for connections
         /// </summary>
@@ -211,10 +235,13 @@ namespace StarLib.Server
 
             AcceptingConnections = false;
 
-            Parallel.ForEach(Proxies, proxy =>
+            Task.Run(() =>
             {
-                proxy.Close();
-            });
+                Parallel.ForEach(Proxies, async proxy =>
+                 {
+                     await proxy.CloseAsync();
+                 });
+            }).Wait();
 
             Interlocked.CompareExchange(ref _serverRunning, 0, 1);
 
@@ -238,7 +265,6 @@ namespace StarLib.Server
             catch
             {
             }
-
 
             if (ServerRunning)
                 await StartAccept();
@@ -281,20 +307,25 @@ namespace StarLib.Server
 
             try
             {
-                client.NoDelay = true;
+                new Thread(async () =>
+                {
+                    //client.Client.ReceiveBufferSize = 2048;
+                    //client.Client.SendBufferSize = 2048;
+                    client.NoDelay = true;
 
-                StarClientConnection cl = new StarClientConnection(client, _packetTypes);
-                cl.RegisterPacketHandlers(_packetHandlers);
+                    StarClientConnection cl = new StarClientConnection(client, _packetTypes);
+                    cl.RegisterPacketHandlers(_packetHandlers);
 
-                StarServerConnection server = new StarServerConnection(_packetTypes);
-                server.RegisterPacketHandlers(_packetHandlers);
+                    StarServerConnection server = new StarServerConnection(_packetTypes);
+                    server.RegisterPacketHandlers(_packetHandlers);
 
-                StarProxy starProxy = new StarProxy(this, cl, server);
-                starProxy.ConnectionClosed += (s, args) => Interlocked.Decrement(ref _numConnected);
+                    StarProxy starProxy = new StarProxy(this, cl, server);
+                    starProxy.ConnectionClosed += (s, args) => Interlocked.Decrement(ref _numConnected);
 
-                Proxies.AddProxy(starProxy.ConnectionId, starProxy);
+                    Proxies.AddProxy(starProxy.ConnectionId, starProxy);
 
-                await starProxy.StartAsync();
+                    await starProxy.StartAsync();
+                }).Start();
             }
             catch (Exception ex)
             {

@@ -22,30 +22,22 @@ using System.Threading.Tasks;
 
 namespace StarLib.Events
 {
-	public abstract class EventManager<TKey, TVal> where TKey : IEquatable<TKey> where TVal : StarEvent
-	{
-		public Dictionary<object, EventObject<TKey, TVal>> Events { get; protected set; }
+    public class AsyncEventMethod<TKey, TVal> : IEventMethod<TKey, TVal> where TKey : IEquatable<TKey>
+    {
+        public TKey Key { get; protected set; }
 
-		protected EventManager()
-		{
-			Events = new Dictionary<object, EventObject<TKey, TVal>>();
-		}
+        public Func<TVal, Task> TaskExecutor { get; protected set; }
 
-        public void PassEvent(TKey key, TVal evt)
+        public AsyncEventMethod(TKey key, Func<TVal, Task> executor)
         {
-            PassEventAsync(key, evt).Wait();
+            Key = key;
+            TaskExecutor = executor;
         }
 
-        public Task PassEventAsync(TKey key, TVal evt)
+        public Task ExecuteAsync(TVal value)
         {
-            return Task.WhenAll(Events.Values.Select(p => p.PassEventAsync(key, evt)));
+            return TaskExecutor(value);
         }
 
-		public void AddEventObject(object obj)
-		{
-			Events.Add(obj, CreateEventObject(obj));
-		}
-
-		protected abstract EventObject<TKey, TVal> CreateEventObject(object obj);
-	}
+    }
 }

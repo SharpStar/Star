@@ -36,6 +36,8 @@ namespace StarLib.Plugins
 
 		void PassPacketEvent(byte packetId, PacketEvent evt, PacketEventType evtType);
 
+        Task PassPacketEventAsync(byte packetId, PacketEvent evt, PacketEventType evtType);
+
         IPlugin[] GetPlugins();
     }
 }

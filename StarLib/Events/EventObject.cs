@@ -29,23 +29,35 @@ namespace StarLib.Events
 		}
 	}
 
-	public class EventObject<TKey, TVal> where TKey : IEquatable<TKey> where TVal : StarEvent
+	public class EventObject<TKey, TVal> : IEventObject<TKey, TVal> where TKey : IEquatable<TKey> where TVal : StarEvent
 	{
 		public object EventObj { get; protected set; }
 
-		public EventMethod<TKey, TVal>[] Methods { get; protected set; }
+		public IEventMethod<TKey, TVal>[] Methods { get; protected set; }
 
-		public EventObject(object obj, IEnumerable<EventMethod<TKey, TVal>> methods)
+		public EventObject(object obj, IEnumerable<IEventMethod<TKey, TVal>> methods)
 		{
 			EventObj = obj;
 			Methods = methods.ToArray();
 		}
 
-		public void PassEvent(TKey key, TVal val)
+        public void PassEvent(TKey key, TVal val)
+        {
+            PassEventAsync(key, val).Wait();
+        }
+
+		public async Task PassEventAsync(TKey key, TVal val)
 		{
 			foreach (var evtMethod in Methods.Where(p => p.Key.Equals(key)))
 			{
-				evtMethod.Execute(val);
+                if (evtMethod is EventMethod<TKey, TVal>)
+                {
+                    ((EventMethod<TKey, TVal>)evtMethod).Execute(val);
+                }
+                else if (evtMethod is AsyncEventMethod<TKey, TVal>)
+                {
+                    await ((AsyncEventMethod<TKey, TVal>)evtMethod).ExecuteAsync(val);
+                }
 			}
 		}
 

@@ -21,6 +21,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using StarLib.Extensions;
 using StarLib.Logging;
 
 namespace StarLib.Server
@@ -44,15 +45,19 @@ namespace StarLib.Server
         public override async Task StartAsync()
         {
             ConnectionClient = new TcpClient();
+            ConnectionClient.NoDelay = true;
+            //ConnectionClient.ReceiveBufferSize = 2048;
+            //ConnectionClient.SendBufferSize = 2048;
 
             bool failed = false;
             try
             {
                 await ConnectionClient.ConnectAsync(StarMain.Instance.Server.ServerEndPoint.Address, StarMain.Instance.Server.ServerEndPoint.Port);
             }
-            catch
+            catch (Exception ex)
             {
                 StarLog.DefaultLogger.Error("Proxy connection to server has failed.");
+                ex.LogError();
 
                 failed = true;
             }

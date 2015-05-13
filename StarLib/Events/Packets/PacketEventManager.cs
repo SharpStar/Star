@@ -23,32 +23,48 @@ using System.Threading.Tasks;
 
 namespace StarLib.Events.Packets
 {
-	public class PacketEventManager : EventManager<PacketEventKey, PacketEvent>
-	{
-		protected override EventObject<PacketEventKey, PacketEvent> CreateEventObject(object obj)
-		{
-			var methods = new List<PacketEventMethod>();
+    public class PacketEventManager : EventManager<PacketEventKey, PacketEvent>
+    {
+        protected override EventObject<PacketEventKey, PacketEvent> CreateEventObject(object obj)
+        {
+            var methods = new List<IEventMethod<PacketEventKey, PacketEvent>>();
 
-			foreach (MethodInfo mInfo in obj.GetType().GetMethods())
-			{
-				PacketEventAttribute attrib = mInfo.GetCustomAttribute<PacketEventAttribute>();
+            foreach (MethodInfo mInfo in obj.GetType().GetMethods())
+            {
+                PacketEventAttribute attrib = mInfo.GetCustomAttribute<PacketEventAttribute>();
 
-				if (attrib == null)
-					continue;
+                if (attrib == null)
+                    continue;
 
-				ParameterInfo[] parameters = mInfo.GetParameters();
+                ParameterInfo[] parameters = mInfo.GetParameters();
 
-				if (parameters.Length != 1 || parameters.First().ParameterType != typeof(PacketEvent))
-					throw new Exception("Invalid Packet Event object!");
+                if (parameters.Length != 1 || parameters.First().ParameterType != typeof(PacketEvent))
+                    throw new Exception("Invalid Packet Event object!");
 
-				Action<PacketEvent> action = (Action<PacketEvent>)Delegate.CreateDelegate(typeof(Action<PacketEvent>), obj, mInfo);
+                IEventMethod<PacketEventKey, PacketEvent> method;
+                if (mInfo.ReturnType == typeof(void))
+                {
+                    Action<PacketEvent> action = (Action<PacketEvent>)Delegate.CreateDelegate(typeof(Action<PacketEvent>), obj, mInfo);
 
-				PacketEventMethod method = new PacketEventMethod(new PacketEventKey { EventType = attrib.EventType, PacketId = attrib.PacketId }, action);
+                    method = new EventMethod<PacketEventKey, PacketEvent>(new PacketEventKey { EventType = attrib.EventType, PacketId = attrib.PacketId }, action);
 
-				methods.Add(method);
-			}
+                }
+                else if (mInfo.ReturnType == typeof(Task))
+                {
+                    Func<PacketEvent, Task> func = (Func<PacketEvent, Task>)Delegate.CreateDelegate(typeof(Func<PacketEvent, Task>), mInfo);
 
-			return new EventObject<PacketEventKey, PacketEvent>(obj, methods);
-		}
-	}
+                    method = new AsyncEventMethod<PacketEventKey, PacketEvent>(new PacketEventKey { EventType = attrib.EventType, PacketId = attrib.PacketId }, func);
+                }
+                else
+                {
+                    continue; //return type must be either void or Task
+                }
+
+                methods.Add(method);
+
+            }
+
+            return new EventObject<PacketEventKey, PacketEvent>(obj, methods);
+        }
+    }
 }

@@ -30,5 +30,8 @@ namespace StarLib.Database.Models
 
         [Index(Unique = true)]
         public string Name { get; set; }
+
+        [Reference]
+        public List<EventHistory> Histories { get; set; }
     }
 }

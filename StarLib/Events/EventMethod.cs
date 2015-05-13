@@ -22,13 +22,13 @@ using System.Threading.Tasks;
 
 namespace StarLib.Events
 {
-	public abstract class EventMethod<TKey, TVal> where TKey : IEquatable<TKey>
+	public class EventMethod<TKey, TVal> : IEventMethod<TKey, TVal> where TKey : IEquatable<TKey>
 	{
 		public TKey Key { get; protected set; }
 
 		public Action<TVal> Executor { get; protected set; }
 
-		protected EventMethod(TKey key, Action<TVal> executor)
+		public EventMethod(TKey key, Action<TVal> executor)
 		{
 			Key = key;
 			Executor = executor;

@@ -18,7 +18,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Mono;
-using SharpStar.Lib.Starbound;
+using StarLib.Mono;
 using StarLib.Networking;
 
 namespace StarLib.Starbound.BTree

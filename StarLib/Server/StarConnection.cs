@@ -19,19 +19,19 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Ionic.Zlib;
-using Nito.AsyncEx;
 using StarLib.DataTypes;
 using StarLib.Extensions;
 using StarLib.Logging;
 using StarLib.Networking;
 using StarLib.Packets;
 using StarLib.Packets.Serialization;
+using StarLib.Utils;
 using Timer = System.Timers.Timer;
 
 namespace StarLib.Server
@@ -58,7 +58,7 @@ namespace StarLib.Server
 
         public TcpClient ConnectionClient { get; protected set; }
 
-        public ConcurrentDictionary<byte, List<IPacketHandler>> PacketHandlers
+        public ConcurrentDictionary<Type, List<IPacketHandler>> PacketHandlers
         {
             get
             {
@@ -93,9 +93,9 @@ namespace StarLib.Server
         #region Private
         private long _connected;
 
-        private readonly AsyncCollection<Packet> _packetQueue;
+        //private readonly BlockingCollection<Packet> _packetQueue;
 
-        private readonly ConcurrentDictionary<byte, List<IPacketHandler>> _packetHandlers;
+        private readonly ConcurrentDictionary<Type, List<IPacketHandler>> _packetHandlers;
 
         private readonly CancellationTokenSource _cts;
 
@@ -105,8 +105,8 @@ namespace StarLib.Server
 
         protected StarConnection(Type[] packetTypes)
         {
-            _packetQueue = new AsyncCollection<Packet>();
-            _packetHandlers = new ConcurrentDictionary<byte, List<IPacketHandler>>();
+            //_packetQueue = new BlockingCollection<Packet>(new ConcurrentQueue<Packet>());
+            _packetHandlers = new ConcurrentDictionary<Type, List<IPacketHandler>>();
             _cts = new CancellationTokenSource();
             _connected = 0;
 
@@ -119,15 +119,12 @@ namespace StarLib.Server
         /// <param name="handlers">The handlers to register</param>
         public void RegisterPacketHandlers(IEnumerable<IPacketHandler> handlers)
         {
-            lock (_packetHandlers)
+            foreach (IPacketHandler handler in handlers)
             {
-                foreach (IPacketHandler handler in handlers)
-                {
-                    if (!PacketHandlers.ContainsKey(handler.PacketId))
-                        PacketHandlers.AddOrUpdate(handler.PacketId, new List<IPacketHandler>(new[] { handler }), (id, p) => p);
-                    else
-                        PacketHandlers[handler.PacketId].Add(handler);
-                }
+                if (!PacketHandlers.ContainsKey(handler.Type))
+                    PacketHandlers.AddOrUpdate(handler.Type, new List<IPacketHandler>(new[] { handler }), (id, p) => p);
+                else
+                    PacketHandlers[handler.Type].Add(handler);
             }
         }
 
@@ -137,11 +134,8 @@ namespace StarLib.Server
         /// <param name="handler"></param>
         public bool UnregisterPacketHandler(IPacketHandler handler)
         {
-            lock (_packetHandlers)
-            {
-                if (PacketHandlers.ContainsKey(handler.PacketId))
-                    return PacketHandlers[handler.PacketId].Remove(handler);
-            }
+            if (PacketHandlers.ContainsKey(handler.Type))
+                return PacketHandlers[handler.Type].Remove(handler);
 
             return false;
         }
@@ -164,9 +158,8 @@ namespace StarLib.Server
             ConnectionClient.NoDelay = true;
 
             Task recvTask = Task.Run(() => ProcessReceive(), _cts.Token);
-            Task sendTask = Task.Run(() => FlushPackets(), _cts.Token);
 
-            return Task.FromResult(true);
+            return recvTask;
         }
 
         protected void Close()
@@ -185,8 +178,6 @@ namespace StarLib.Server
 
             try
             {
-                _packetQueue.CompleteAdding();
-
                 if (ConnectionClient != null)
                 {
                     await Task.Factory.FromAsync(ConnectionClient.Client.BeginDisconnect(false, null, null), ConnectionClient.Client.EndDisconnect);
@@ -223,9 +214,9 @@ namespace StarLib.Server
 
         protected virtual async Task ProcessReceive()
         {
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[2048];
 
-            while (true)
+            while (Connected && ConnectionClient.Connected)
             {
                 if (_cts.IsCancellationRequested)
                     break;
@@ -252,9 +243,6 @@ namespace StarLib.Server
                     break;
                 }
 
-                if (_cts.IsCancellationRequested)
-                    break;
-
                 foreach (Packet packet in PacketReader.Read(data, 0))
                 {
                     if (_cts.IsCancellationRequested)
@@ -262,20 +250,15 @@ namespace StarLib.Server
 
                     try
                     {
-                        if (packet == null)
-                        {
-                            StarLog.DefaultLogger.Warn("Encountered null packet!");
-                            continue;
-                        }
-
                         packet.Direction = Direction;
 
+                        Type pType = packet.GetType();
                         List<IPacketHandler> pHandlers = null;
-                        if (PacketHandlers.ContainsKey(packet.PacketId))
+                        if (PacketHandlers.ContainsKey(pType))
                         {
-                            pHandlers = PacketHandlers[packet.PacketId];
+                            pHandlers = PacketHandlers[pType];
 
-                            foreach (IPacketHandler beforeHandler in pHandlers.Where(p => p.Type.IsInstanceOfType(packet)))
+                            foreach (IPacketHandler beforeHandler in pHandlers)
                             {
                                 beforeHandler.HandleBefore(packet, this);
                             }
@@ -285,19 +268,22 @@ namespace StarLib.Server
                         if (packetArgs != null)
                             packetArgs(this, new PacketEventArgs(Proxy, packet));
 
-                        await OtherConnection.SendPacketAsync(packet);
-
-                        if (pHandlers != null)
+#pragma warning disable 4014
+                        OtherConnection.SendPacketAsync(packet).ContinueWith(p =>
+#pragma warning restore 4014
                         {
-                            foreach (IPacketHandler sentHandler in pHandlers.Where(p => p.Type.IsInstanceOfType(packet)))
+                            if (pHandlers != null)
                             {
-                                sentHandler.HandleAfter(packet, this);
+                                foreach (IPacketHandler sentHandler in pHandlers)
+                                {
+                                    sentHandler.HandleAfter(packet, this);
+                                }
                             }
-                        }
 
-                        EventHandler<PacketEventArgs> aPacketArgs = AfterPacketReceived;
-                        if (aPacketArgs != null)
-                            aPacketArgs(this, new PacketEventArgs(Proxy, packet));
+                            EventHandler<PacketEventArgs> aPacketArgs = AfterPacketReceived;
+                            if (aPacketArgs != null)
+                                aPacketArgs(this, new PacketEventArgs(Proxy, packet));
+                        }, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.NotOnFaulted);
 
                     }
                     catch (Exception ex)
@@ -321,60 +307,9 @@ namespace StarLib.Server
         /// Sends a packet to this connection asynchronously
         /// </summary>
         /// <param name="sendingPacket">The packet to send</param>
-        public virtual async Task SendPacketAsync(Packet sendingPacket)
+        public virtual Task SendPacketAsync(Packet sendingPacket)
         {
-            if (!Connected)
-                return;
-
-            try
-            {
-                await _packetQueue.AddAsync(sendingPacket);
-            }
-            catch (InvalidOperationException)
-            {
-                Close();
-            }
-
-            //if (!Connected)
-            //{
-            //    if (!_packetQueue.IsAddingCompleted)
-            //        _packetQueue.TryAdd(sendingPacket);
-            //}
-            //else
-            //{
-            //    if (_packetQueue.Count > 0)
-            //        FlushPackets();
-            //    else
-            //        FlushPacket(sendingPacket);
-            //}
-        }
-
-        /// <summary>
-        /// Flush all packets currently queued to the client asynchronously
-        /// </summary>
-        public virtual async Task FlushPackets()
-        {
-            while (await _packetQueue.OutputAvailableAsync(_cts.Token))
-            {
-                if (_cts.IsCancellationRequested)
-                    break;
-
-                Packet packet;
-
-                try
-                {
-                    packet = await _packetQueue.TakeAsync(_cts.Token);
-                }
-                catch
-                {
-                    break;
-                }
-
-                if (_cts.IsCancellationRequested)
-                    break;
-
-                await FlushPacket(packet);
-            }
+            return FlushPacket(sendingPacket);
         }
 
         protected virtual async Task FlushPacket(Packet packet)
@@ -403,11 +338,13 @@ namespace StarLib.Server
                     buffer = PacketSerializer.Serialize(packet);
                 }
 
-                bool compressed = buffer.Length >= 8192;
+                bool compressed = buffer.Length >= 2048;
 
                 if (compressed)
                 {
-                    buffer = ZlibStream.CompressBuffer(buffer);
+                    buffer = ZLib.Compress(buffer);
+                    //buffer = await ZLib.CompressAsync(buffer);
+                    //buffer = ZlibStream.CompressBuffer(buffer);
                 }
 
                 int length = compressed ? -buffer.Length : buffer.Length;
@@ -419,13 +356,15 @@ namespace StarLib.Server
                 Buffer.BlockCopy(lenBuf, 0, finalBuffer, 1, lenBuf.Length);
                 Buffer.BlockCopy(buffer, 0, finalBuffer, 1 + lenBuf.Length, buffer.Length);
 
-                if (Connected)
+                if (Connected && ConnectionClient.Connected)
                 {
-                    await _networkStream.WriteAsync(finalBuffer, 0, finalBuffer.Length, _cts.Token);
+                    await _networkStream.WriteAsync(finalBuffer, 0, finalBuffer.Length, _cts.Token).ContinueWith(p =>
+                    {
+                        EventHandler<PacketEventArgs> packetSent = PacketSent;
+                        if (packetSent != null)
+                            packetSent(this, new PacketEventArgs(Proxy, packet));
 
-                    EventHandler<PacketEventArgs> packetSent = PacketSent;
-                    if (packetSent != null)
-                        packetSent(this, new PacketEventArgs(Proxy, packet));
+                    }, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.NotOnFaulted);
                 }
             }
             catch
@@ -454,6 +393,5 @@ namespace StarLib.Server
         {
             Dispose(false);
         }
-
     }
 }

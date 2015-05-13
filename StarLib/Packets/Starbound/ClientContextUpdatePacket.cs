@@ -19,21 +19,21 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-    public class ClientContextUpdatePacket : Packet
-    {
-        public override byte PacketId
-        {
-            get
-            {
-                return (byte)PacketType.ClientContextUpdate;
-            }
-            protected set
-            {
-                throw new NotImplementedException();
-            }
-        }
+    //public class ClientContextUpdatePacket : Packet
+    //{
+    //    public override byte PacketId
+    //    {
+    //        get
+    //        {
+    //            return (byte)PacketType.ClientContextUpdate;
+    //        }
+    //        protected set
+    //        {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
 
-        [StarSerialize(0)]
-        public byte[] Data { get; set; }
-    }
+    //    [StarSerialize(0)]
+    //    public byte[] Data { get; set; }
+    //}
 }
