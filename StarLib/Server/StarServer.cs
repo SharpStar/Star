@@ -305,9 +305,10 @@ namespace StarLib.Server
             Interlocked.Increment(ref _numConnected);
             Interlocked.Increment(ref _totalJoined);
 
-            try
+
+            new Thread(async () =>
             {
-                new Thread(async () =>
+                try
                 {
                     //client.Client.ReceiveBufferSize = 2048;
                     //client.Client.SendBufferSize = 2048;
@@ -325,12 +326,12 @@ namespace StarLib.Server
                     Proxies.AddProxy(starProxy.ConnectionId, starProxy);
 
                     await starProxy.StartAsync();
-                }).Start();
-            }
-            catch (Exception ex)
-            {
-                ex.LogError();
-            }
+                }
+                catch (Exception ex)
+                {
+                    ex.LogError();
+                }
+            }).Start();
         }
     }
 }

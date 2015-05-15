@@ -161,17 +161,14 @@ namespace StarLib.Server
         /// </summary>
         public async Task CloseAsync()
         {
-            if (!IsDisposed && Running)
+            if (ClientConnection != null && !ClientConnection.IsDisposed && ClientConnection.Connected)
             {
-                if (ClientConnection != null && !ClientConnection.IsDisposed && ClientConnection.Connected)
-                {
-                    await ClientConnection.StopAsync();
-                }
+                await ClientConnection.StopAsync();
+            }
 
-                if (ServerConnection != null && !ServerConnection.IsDisposed && ServerConnection.Connected)
-                {
-                    await ServerConnection.StopAsync();
-                }
+            if (ServerConnection != null && !ServerConnection.IsDisposed && ServerConnection.Connected)
+            {
+                await ServerConnection.StopAsync();
             }
         }
 

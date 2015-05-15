@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Ionic.Zlib;
 using StarLib.DataTypes;
 using StarLib.Networking;
 using StarLib.Utils;
@@ -106,7 +107,18 @@ namespace StarLib.Packets
 
             if (compressed) //uncompress this packet if it has been compressed
             {
-                data = ZLib.Decompress(data);
+                using (MemoryStream ms = new MemoryStream(data))
+                {
+                    using (MemoryStream outStream = new MemoryStream())
+                    {
+                        using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, true))
+                        {
+                            zs.CopyTo(outStream);
+                        }
+                        
+                        data = outStream.ToArray();
+                    }
+                }
                 //data = await ZLib.DecompressAsync(data);
                 //data = ZlibStream.UncompressBuffer(data);
             }

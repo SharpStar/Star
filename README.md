@@ -28,7 +28,7 @@ There are two options for running Star on Linux. If you want to run Star as a da
 
 #### Option 2
 
-1. Install Mono (v 3.2.8+) through a package manager or compile it manually ([refer here](<http://www.mono-project.com/docs/compiling-mono/linux/>)).
+1. Install Mono (v 4.0.0+) through a package manager or compile it manually ([refer here](<http://www.mono-project.com/docs/compiling-mono/linux/>)).
    - Ubuntu: sudo apt-get install mono-complete
 2. Run "mono SharpStar.exe" for normal usage. If you want to run it as a daemon, run "mono-service SharpStar.exe" instead.
 4. Refer to Windows steps 2 and 3

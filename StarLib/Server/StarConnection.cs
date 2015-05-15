@@ -19,12 +19,12 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Ionic.Zlib;
 using StarLib.DataTypes;
 using StarLib.Extensions;
 using StarLib.Logging;
@@ -181,18 +181,20 @@ namespace StarLib.Server
                 if (ConnectionClient != null)
                 {
                     await Task.Factory.FromAsync(ConnectionClient.Client.BeginDisconnect(false, null, null), ConnectionClient.Client.EndDisconnect);
-
-                    Stopwatch sw = Stopwatch.StartNew();
-
-                    byte[] tmpBuf = new byte[1024];
-
-                    while (await _networkStream.ReadAsync(tmpBuf, 0, tmpBuf.Length) > 0)
+                    
+                    if (ConnectionClient.Client.Poll(100000, SelectMode.SelectRead))
                     {
-                        if (sw.Elapsed > TimeSpan.FromSeconds(1))
-                            break;
-                    }
+                        //Stopwatch sw = Stopwatch.StartNew();
 
-                    sw.Stop();
+                        //byte[] tmpBuf = new byte[1024];
+                        //while (_networkStream.Read(tmpBuf, 0, tmpBuf.Length) > 0)
+                        //{
+                        //    if (sw.Elapsed > TimeSpan.FromMilliseconds(100))
+                        //        break;
+                        //}
+
+                        //sw.Stop();
+                    }
                 }
             }
             catch
@@ -214,7 +216,7 @@ namespace StarLib.Server
 
         protected virtual async Task ProcessReceive()
         {
-            byte[] buffer = new byte[2048];
+            byte[] buffer = new byte[4096];
 
             while (Connected && ConnectionClient.Connected)
             {
@@ -230,7 +232,7 @@ namespace StarLib.Server
                     {
                         Close();
 
-                        break;
+                        return;
                     }
 
                     data = new byte[len];
@@ -240,13 +242,13 @@ namespace StarLib.Server
                 {
                     Close();
 
-                    break;
+                    return;
                 }
 
                 foreach (Packet packet in PacketReader.Read(data, 0))
                 {
                     if (_cts.IsCancellationRequested)
-                        break;
+                        return;
 
                     try
                     {
@@ -314,6 +316,9 @@ namespace StarLib.Server
 
         protected virtual async Task FlushPacket(Packet packet)
         {
+            if (!Connected)
+                return;
+
             try
             {
                 packet.Direction = Direction;
@@ -342,7 +347,15 @@ namespace StarLib.Server
 
                 if (compressed)
                 {
-                    buffer = ZLib.Compress(buffer);
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Compress, CompressionLevel.BestSpeed))
+                        {
+                            zs.Write(buffer, 0, buffer.Length);
+                        }
+
+                        buffer = ms.ToArray();
+                    }
                     //buffer = await ZLib.CompressAsync(buffer);
                     //buffer = ZlibStream.CompressBuffer(buffer);
                 }
