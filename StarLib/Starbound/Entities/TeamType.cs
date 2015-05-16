@@ -16,26 +16,21 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
 using System.Collections.Generic;
-using StarLib.Packets.Serialization.Attributes;
-using StarLib.Starbound.Entities;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace StarLib.Packets.Starbound
+namespace StarLib.Starbound.Entities
 {
-    //public class EntityCreatePacket : Packet
-    //{
-    //    public override byte PacketId
-    //    {
-    //        get
-    //        {
-    //            return (byte)PacketType.EntityCreate;
-    //        }
-    //        protected set
-    //        {
-    //            throw new NotImplementedException();
-    //        }
-    //    }
-        
-    //    [StarSerialize(0)]
-    //    public Entity Entity { get; set; }
-    //}
+    public enum TeamType : byte
+    {
+        Null = 0,
+        Friendly = 1,
+        Enemy = 2,
+        PVP = 3,
+        Passive = 4,
+        Ghostly = 5,
+        Emitter = 6,
+        Indiscriminate = 7
+    }
 }

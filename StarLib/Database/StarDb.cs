@@ -67,22 +67,23 @@ namespace StarLib.Database
             }
         }
 
-        public bool AddCharacter(string name, string uuid, int? accountId)
+        public Character GetCharacter(int id)
         {
             using (var conn = CreateConnection())
             {
-                if (conn.Count<Character>(p => p.Uuid == uuid) > 0)
-                    return false;
+                return conn.LoadSingleById<Character>(id);
+            }
+        }
 
-                conn.Save(new Character
+        public Character GetCharacterByUuid(string uuid)
+        {
+            using (var conn = CreateConnection())
+            {
+                return conn.Single<Character>(new
                 {
-                    Name = name,
-                    Uuid = uuid,
-                    AccountId = accountId
+                    Uuid = uuid
                 });
             }
-
-            return true;
         }
 
         public void SaveCharacter(Character character)
@@ -141,27 +142,28 @@ namespace StarLib.Database
         {
             using (var conn = CreateConnection())
             {
+                conn.Save(account);
                 conn.SaveAllReferences(account);
             }
         }
 
-        public bool AddBan(string playerName, string playerUuid, int? accountId, DateTime expirationTime, string reason = "")
+        public bool AddBan(string playerName, string playerIp, int? accountId, DateTime expirationTime, string reason = "")
         {
             using (var conn = CreateConnection())
             {
                 if (accountId.HasValue && conn.Count<Ban>(p => p.AccountId == accountId) > 0)
                     return false;
 
-                if (conn.Count<Ban>(p => p.Uuid == playerUuid) > 0)
+                if (conn.Count<Ban>(p => p.IpAddress == playerIp) > 0)
                     return false;
 
                 conn.Save(new Ban
                 {
                     PlayerName = playerName,
-                    Uuid = playerUuid,
                     AccountId = accountId,
                     ExpirationTime = expirationTime,
                     Reason = reason,
+                    IpAddress = playerIp,
                     Active = true
                 });
             }
@@ -192,11 +194,11 @@ namespace StarLib.Database
             return true;
         }
 
-        public bool RemoveBanByUuid(string uuid)
+        public bool RemoveBanByIp(string ip)
         {
             using (var conn = CreateConnection())
             {
-                Ban ban = GetBanByUuid(uuid);
+                Ban ban = GetBanByIp(ip);
 
                 if (ban == null)
                     return false;
@@ -218,13 +220,13 @@ namespace StarLib.Database
             }
         }
 
-        public Ban GetBanByUuid(string uuid)
+        public Ban GetBanByIp(string ip)
         {
             using (var conn = CreateConnection())
             {
                 return conn.Single<Ban>(new
                 {
-                    Uuid = uuid
+                    IpAddress = ip
                 });
             }
         }

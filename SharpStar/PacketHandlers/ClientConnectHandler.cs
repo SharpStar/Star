@@ -41,6 +41,16 @@ namespace SharpStar.PacketHandlers
             plr.Name = packet.PlayerName;
             plr.Uuid = packet.Uuid;
 
+            string uuid = plr.Uuid.Id;
+            Character ch = StarMain.Instance.Database.GetCharacterByUuid(uuid) ?? new Character();
+
+            ch.Name = plr.Name;
+            ch.Uuid = uuid;
+            ch.LastIpAddress = connection.Proxy.ClientConnection.RemoteEndPoint.Address.ToString();
+            ch.AccountId = null;
+
+            StarMain.Instance.Database.SaveCharacter(ch);
+
             if (!string.IsNullOrEmpty(packet.Account) && Program.Configuration.EnableSharpAccounts)
             {
                 Account account = StarMain.Instance.Database.GetAccountByUsername(packet.Account);
@@ -61,7 +71,7 @@ namespace SharpStar.PacketHandlers
             }
             else
             {
-                Ban ban = StarMain.Instance.Database.GetBanByUuid(packet.Uuid.Id);
+                Ban ban = StarMain.Instance.Database.GetBanByIp(connection.Proxy.ClientConnection.RemoteEndPoint.Address.ToString());
                 if (ban != null && ban.Active)
                 {
                     if (DateTime.Now > ban.ExpirationTime)

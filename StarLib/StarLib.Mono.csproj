@@ -241,7 +241,9 @@
     <Compile Include="Starbound\ChatSendMode.cs" />
     <Compile Include="Starbound\DamageNotification.cs" />
     <Compile Include="Starbound\Entities\Entity.cs" />
+    <Compile Include="Starbound\Entities\EntityDamageTeam.cs" />
     <Compile Include="Starbound\Entities\EntityType.cs" />
+    <Compile Include="Starbound\Entities\TeamType.cs" />
     <Compile Include="Starbound\InteractionType.cs" />
     <Compile Include="Starbound\ItemDescriptor.cs" />
     <Compile Include="Starbound\Player.cs" />

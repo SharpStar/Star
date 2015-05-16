@@ -38,13 +38,26 @@ namespace SharpStar.ConsoleCommands
             {
                 string uuid = p.Arguments[0];
                 string reason = p.Arguments[1];
+                Character ch = StarMain.Instance.Database.GetCharacterByUuid(uuid);
+
+                if (ch == null)
+                {
+                    StarLog.DefaultLogger.Info(StarMain.Instance.CurrentLocalization["BanHammerCommandNoSuchCharacter"]);
+
+                    return;
+                }
+
+                string ip = ch.LastIpAddress;
 
                 StarProxy proxy = StarMain.Instance.Server.Proxies.SingleOrDefault(x => x.Player != null && x.Player.Uuid.Id == uuid);
 
                 if (proxy != null)
+                {
+                    ip = proxy.ClientConnection.RemoteEndPoint.Address.ToString();
                     proxy.Kick(reason);
+                }
 
-                StarMain.Instance.Database.AddBan(proxy != null ? proxy.Player.NameWithoutColor : string.Empty, uuid, null, DateTime.MaxValue, reason);
+                StarMain.Instance.Database.AddBan(proxy != null ? proxy.Player.Name : string.Empty, ip, null, DateTime.MaxValue, reason);
 
             };
 
@@ -53,6 +66,16 @@ namespace SharpStar.ConsoleCommands
                 string uuid = p.Arguments[0];
                 string reason = p.Arguments[1];
                 string time = p.Arguments[2];
+                Character ch = StarMain.Instance.Database.GetCharacterByUuid(uuid);
+
+                if (ch == null)
+                {
+                    StarLog.DefaultLogger.Info(StarMain.Instance.CurrentLocalization["BanHammerCommandNoSuchCharacter"]);
+
+                    return;
+                }
+
+                string ip = ch.LastIpAddress;
 
                 StarProxy proxy = StarMain.Instance.Server.Proxies.SingleOrDefault(x => x.Player != null && x.Player.Uuid.Id == uuid);
                 Account account = null;
@@ -61,6 +84,7 @@ namespace SharpStar.ConsoleCommands
                 {
                     proxy.Kick(reason);
 
+                    ip = proxy.ClientConnection.RemoteEndPoint.Address.ToString();
                     account = proxy.Player.Account;
                 }
 
@@ -71,7 +95,7 @@ namespace SharpStar.ConsoleCommands
                 else
                     expirDate = time.ToDateTime();
 
-                Ban existingBan = StarMain.Instance.Database.GetBanByUuid(uuid);
+                Ban existingBan = StarMain.Instance.Database.GetBanByIp(ip);
 
                 if (existingBan != null)
                 {
@@ -84,8 +108,8 @@ namespace SharpStar.ConsoleCommands
                 }
                 else
                 {
-                    StarMain.Instance.Database.AddBan(proxy != null ? proxy.Player.NameWithoutColor : string.Empty,
-                        uuid, account != null ? account.Id : (int?)null, expirDate, reason);
+                    StarMain.Instance.Database.AddBan(proxy != null ? proxy.Player.Name : string.Empty,
+                        ip, account != null ? account.Id : (int?)null, expirDate, reason);
 
                     StarLog.DefaultLogger.Info("Ban added");
                 }

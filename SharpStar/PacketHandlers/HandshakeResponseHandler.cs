@@ -65,9 +65,6 @@ namespace SharpStar.PacketHandlers
                     }
                 }
 
-                //add the character to the databse and associate it with the account
-                StarMain.Instance.Database.AddCharacter(connection.Proxy.Player.Name, connection.Proxy.Player.Uuid.Id, account.Id);
-
                 byte[] acctHash = Convert.FromBase64String(account.PasswordHash);
 
                 connection.Proxy.Player.AuthSuccess = packet.PasswordHash.SequenceEqual(acctHash);
@@ -79,14 +76,25 @@ namespace SharpStar.PacketHandlers
                         Reason = StarMain.Instance.CurrentLocalization["WrongPasswordError"]
                     });
 
+                    StarMain.Instance.Database.AddEvent(
+                        string.Format("Player {0} ({1}) failed to login with the username {2}", connection.Proxy.Player.Name,
+                        connection.Proxy.Player.Uuid.Id, connection.Proxy.Player.Account.Username), new[] { "auth" });
+
                     connection.Proxy.Player.Account = null;
+                }
+                else
+                {
+                    //add the character to the databse and associate it with the account
+                    Character ch = StarMain.Instance.Database.GetCharacterByUuid(connection.Proxy.Player.Uuid.Id) ?? new Character();
+
+                    ch.AccountId = account.Id;
+
+                    StarMain.Instance.Database.SaveCharacter(ch);
                 }
             }
             else if (!connection.Proxy.Player.AuthAttempted)
             {
                 connection.Proxy.Player.AuthSuccess = true;
-
-                StarMain.Instance.Database.AddCharacter(connection.Proxy.Player.Name, connection.Proxy.Player.Uuid.Id, null);
             }
             else
             {

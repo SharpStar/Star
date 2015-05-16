@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -71,6 +72,14 @@ namespace StarLib.Server
             get
             {
                 return Interlocked.Read(ref _connected) == 1;
+            }
+        }
+
+        public IPEndPoint RemoteEndPoint
+        {
+            get
+            {
+                return ConnectionClient.Client.RemoteEndPoint as IPEndPoint;
             }
         }
 

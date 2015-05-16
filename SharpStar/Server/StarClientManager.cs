@@ -101,6 +101,9 @@ namespace SharpStar.Server
 
         protected void RegisterAccountCheck(StarProxy proxy)
         {
+            if (!Program.Configuration.EnableSharpAccounts)
+                return;
+
             if (!proxy.Connected || proxy.ServerConnection == null || proxy.ClientConnection == null)
                 return;
 

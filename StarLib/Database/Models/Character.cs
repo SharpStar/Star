@@ -30,7 +30,10 @@ namespace StarLib.Database.Models
 
         public string Name { get; set; }
 
+        [Index(Unique = true)]
         public string Uuid { get; set; }
+
+        public string LastIpAddress { get; set; }
 
         [References(typeof(Account))]
         public int? AccountId { get; set; }

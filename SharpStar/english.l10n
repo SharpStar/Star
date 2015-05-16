@@ -5,9 +5,15 @@ Shutdown=The server has shut down. We'll be back soon!
 
 #Console Commands
 
+MakeAdminConsoleCommandName=makeadmin
+MakeAdminConsoleCommandDesc=Change the admin status of a user to either yes or no
+MakeAdminConsoleCommandHelp=Syntax: makeadmin <username> <yes/no>
+MakeAdminConsoleCommandAccountNotExistError=The specified account does not exist!
+MakeAdminConsoleCommandSuccessMessageFormat=User {0}'s admin status has been set to {1}
+
 ListConsoleCommandName=starlist
 ListConsoleCommandDesc=Lists the console commands
-ListConsoleCommandHelp=starlist <page (default=1)>
+ListConsoleCommandHelp=Syntax: starlist <page (default=1)>
 ListConsoleCommandInvalidPage=Please supply a valid page number
 ListConsoleCommandPageFormat=Page {0} of {1}
 
@@ -47,9 +53,10 @@ WarpToWorldCommandHelp=Syntax: worldwarp <uuid> <coordinates> <spawn x> <spawn y
 WarpToWorldCommandSpawnXYInvalid=Invalid x, y spawn values!
 WarpToWorldCommandParseError=Invalid coordinates!
 
-BanHammerCommandName=starban
+BanHammerCommandName=ban
 BanHammerCommandDesc=Bans a player using the mighty banhammer
-BanHammerCommandHelp=Syntax: starban <uuid> <reason> <time(default=forever)>
+BanHammerCommandHelp=Syntax: ban <uuid> <reason> <time(default=forever)>
+BanHammerCommandNoSuchCharacter=Could not find character!
 
 BanReasonMessage=You have been banned from this server!\nReason: {0}\nExpiration Date: {1}
 BanMessageExpirationDateFormat=MM-dd-yy hh:mm

@@ -23,23 +23,25 @@ using ServiceStack.DataAnnotations;
 
 namespace StarLib.Database.Models
 {
-	public class Ban
-	{
-		[AutoIncrement]
-		public int Id { get; set; }
+    public class Ban
+    {
+        [AutoIncrement]
+        public int Id { get; set; }
 
-		public string PlayerName { get; set; }
+        public string PlayerName { get; set; }
 
         public string Reason { get; set; }
 
         public bool Active { get; set; }
 
         public DateTime ExpirationTime { get; set; }
-		
-		[Index(Unique = true)]
-		public string Uuid { get; set; }
-		
-		[References(typeof(Account))]
-		public int? AccountId { get; set; }
-	}
+        
+        public string Uuid { get; set; }
+
+        [Index(Unique = true)]
+        public string IpAddress { get; set; }
+
+        [References(typeof(Account))]
+        public int? AccountId { get; set; }
+    }
 }

@@ -28,6 +28,9 @@ namespace StarLib.Database.Models
 		[AutoIncrement]
 		public int Id { get; set; }
 
+        [References(typeof(Account))]
+        public int AccountId { get; set; }
+
 		public string Name { get; set; }
 		
 		public bool Allowed { get; set; }

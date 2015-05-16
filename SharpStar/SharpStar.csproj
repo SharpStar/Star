@@ -89,6 +89,7 @@
     <Compile Include="ConsoleCommands\KickAllCommand.cs" />
     <Compile Include="ConsoleCommands\ListCommand.cs" />
     <Compile Include="ConsoleCommands\ListPlayersCommand.cs" />
+    <Compile Include="ConsoleCommands\MakeAdminCommand.cs" />
     <Compile Include="ConsoleCommands\ReloadConfigsCommand.cs" />
     <Compile Include="ConsoleCommands\UuidOfCommand.cs" />
     <Compile Include="ConsoleCommands\WarpToWorldCommand.cs" />

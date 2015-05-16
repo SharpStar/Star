@@ -274,7 +274,8 @@ namespace SharpStar
                 new UuidOfCommand(),
                 new BroadcastCommand(),
                 new WarpToWorldCommand(),
-                new BanHammerCommand()
+                new BanHammerCommand(),
+                new MakeAdminCommand()
             };
         }
 
