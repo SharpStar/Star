@@ -46,7 +46,7 @@ namespace StarLib.Database
 
 		public virtual SQLiteAsyncConnection CreateAsyncConnection()
 		{
-            var connStr = new SQLiteConnectionString(FileName, true);
+            var connStr = new SQLiteConnectionString(FileName, false);
 
             return new SQLiteAsyncConnection(() => new SQLiteConnectionWithLock(new SQLitePlatformGeneric(), connStr));
         }

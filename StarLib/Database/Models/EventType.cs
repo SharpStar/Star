@@ -31,10 +31,7 @@ namespace StarLib.Database.Models
 
         [Indexed(Unique = true)]
         public string Name { get; set; }
-
-        [ForeignKey(typeof(EventHistory))]
-        public int? EventHistoryId { get; set; }
-
+        
         [ManyToMany(typeof(EventTypeHistory))]
         public List<EventHistory> Histories { get; set; }
     }

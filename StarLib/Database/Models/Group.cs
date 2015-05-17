@@ -34,7 +34,7 @@ namespace StarLib.Database.Models
 
 		public bool IsDefault { get; set; }
 
-		[ManyToMany(typeof(PermissionGroup))]
+		[OneToMany]
 		public List<Permission> Permissions { get; set; }
 
 		[OneToMany]

@@ -32,9 +32,6 @@ namespace StarLib.Database.Models
         [ForeignKey(typeof(Account))]
         public int AccountId { get; set; }
 
-        [ForeignKey(typeof(EventType))]
-        public int? EventTypeId { get; set; }
-
         [ManyToMany(typeof(EventTypeHistory))]
         public List<EventType> EventTypes { get; set; }
 

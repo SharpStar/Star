@@ -36,7 +36,7 @@ namespace StarLib.Database.Models
 		
 		public bool Allowed { get; set; }
 
-        [ManyToMany(typeof(PermissionGroup))]
-        public List<Group> Groups { get; set; }
+        [ForeignKey(typeof(Group))]
+        public int GroupId { get; set; }
 	}
 }

@@ -111,7 +111,7 @@ namespace StarLib.Server
         private readonly ConcurrentDictionary<Type, List<IPacketHandler>> _packetHandlers;
 
         private readonly CancellationTokenSource _cts;
-        
+
         #endregion
 
         protected StarConnection(Type[] packetTypes)
@@ -164,20 +164,20 @@ namespace StarLib.Server
                 throw new Exception("Already connected and receiving!");
 
             Interlocked.CompareExchange(ref _connected, 1, 0);
-            
+
             ConnectionClient.Client.NoDelay = true;
 
             byte[] buffer = new byte[1024];
             _readEventArgs.Completed += Operation_Completed;
             _readEventArgs.SetBuffer(buffer, 0, buffer.Length);
-            
+
             _completed = new TaskCompletionSource<bool>();
 
             if (!ConnectionClient.Client.ReceiveAsync(_readEventArgs))
             {
                 await ProcessReceive(_readEventArgs);
             }
-            
+
             await _completed.Task;
         }
 
@@ -192,7 +192,7 @@ namespace StarLib.Server
                     EventHandler<PacketEventArgs> packetSent = PacketSent;
                     if (packetSent != null)
                         packetSent(this, new PacketEventArgs(Proxy, e.UserToken as Packet));
-                    
+
                     e.Dispose();
                     break;
                 default:
@@ -264,12 +264,12 @@ namespace StarLib.Server
             {
                 if (_cts.IsCancellationRequested)
                     return;
-                
+
                 foreach (Packet packet in PacketReader.Read(e.Buffer, e.Offset, e.BytesTransferred))
                 {
                     if (_cts.IsCancellationRequested)
                         return;
-                    
+
                     try
                     {
                         packet.Direction = Direction;
@@ -314,7 +314,7 @@ namespace StarLib.Server
                     }
                 }
 
-                if (!ConnectionClient.Client.ReceiveAsync(e))
+                if (ConnectionClient != null && !ConnectionClient.Client.ReceiveAsync(e))
                 {
                     await ProcessReceive(_readEventArgs);
                 }

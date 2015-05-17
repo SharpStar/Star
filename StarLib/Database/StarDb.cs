@@ -217,9 +217,21 @@ namespace StarLib.Database
 
         public async Task<List<Group>> GetGroupsWithPermissionAsync(string permission)
         {
-            var perm = await Connection.Table<Permission>().Where(p => p.Name.ToUpper() == permission.ToUpper()).FirstOrDefaultAsync();
+            var perms = await Connection.Table<Permission>().Where(p => p.Name.ToUpper() == permission.ToUpper()).ToListAsync();
+            var ids = perms.Select(p => p.GroupId);
 
-            return perm.Groups;
+            var groups = new List<Group>();
+            foreach (int id in ids)
+            {
+                Group g = await Connection.GetAsync<Group>(id);
+
+                if (g == null)
+                    continue;
+
+                groups.Add(g);
+            }
+
+            return groups;
         }
 
         public Task SaveGroupAsync(Group group)
@@ -241,13 +253,16 @@ namespace StarLib.Database
                 EventType evtType = await Connection.Table<EventType>().Where(p => p.Name.ToUpper() == type.ToUpper()).FirstOrDefaultAsync();
 
                 if (evtType != null)
+                {
                     evt.EventTypes.Add(evtType);
+                }
                 else
+                {
                     evt.EventTypes.Add(new EventType { Name = type });
+                }
             }
-
-            await Connection.InsertOrReplaceAllAsync(evt.EventTypes);
-            await Connection.InsertOrReplaceWithChildrenAsync(evt);
+            
+            await Connection.InsertWithChildrenAsync(evt);
         }
 
         public Task SaveEventAsync(EventHistory evt)
