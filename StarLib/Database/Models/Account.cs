@@ -19,25 +19,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ServiceStack.DataAnnotations;
+using SQLite.Net.Attributes;
+using SQLiteNetExtensions.Attributes;
 
 namespace StarLib.Database.Models
 {
     public class Account
     {
-        [AutoIncrement]
+        [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
         public Guid InternalId { get; set; }
 
-        [Index(Unique = true)]
+        [Indexed(Unique = true)]
         public string Username { get; set; }
 
         public string PasswordHash { get; set; }
 
         public string PasswordSalt { get; set; }
 
-        [References(typeof(Group))]
+        [ForeignKey(typeof(Group))]
         public int? GroupId { get; set; }
 
         public DateTime? LastLogin { get; set; }
@@ -46,10 +47,10 @@ namespace StarLib.Database.Models
 
         public bool Banned { get; set; }
 
-        [Reference]
+        [OneToMany]
         public List<Permission> Permissions { get; set; }
 
-        [Reference]
+        [OneToMany(CascadeOperations = CascadeOperation.CascadeDelete)]
         public List<Character> Characters { get; set; }
     }
 }

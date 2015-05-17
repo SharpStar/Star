@@ -123,14 +123,14 @@ namespace StarLib.Plugins.CSharp
 			e.Proxy.ServerConnection.AfterPacketReceived += AfterPacketReceived;
 		}
 
-		private async void AfterPacketReceived(object sender, PacketEventArgs e)
+		private void AfterPacketReceived(object sender, PacketEventArgs e)
 		{
-			await PassPacketEventAsync(e.Packet.PacketId, new PacketEvent(e.Packet, e.Proxy), PacketEventType.AfterSent);
+		    PassPacketEvent(e.Packet.PacketId, new PacketEvent(e.Packet, e.Proxy), PacketEventType.AfterSent);
 		}
 
-		private async void PacketReceived(object sender, PacketEventArgs e)
+		private void PacketReceived(object sender, PacketEventArgs e)
 		{
-			await PassPacketEventAsync(e.Packet.PacketId, new PacketEvent(e.Packet, e.Proxy), PacketEventType.BeforeSent);
+			PassPacketEvent(e.Packet.PacketId, new PacketEvent(e.Packet, e.Proxy), PacketEventType.BeforeSent);
 		}
 
 		protected virtual void EnablePlugins()
@@ -301,7 +301,6 @@ namespace StarLib.Plugins.CSharp
         public override Task PassPacketEventAsync(byte packetId, PacketEvent evt, PacketEventType evtType)
         {
             var tasks = new List<Task>();
-
             foreach (CSPlugin plugin in _plugins.Values)
             {
                 tasks.Add(plugin.PacketEventManager.PassEventAsync(new PacketEventKey { EventType = evtType, PacketId = packetId }, evt));

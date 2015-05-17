@@ -197,6 +197,12 @@ namespace StarLib.Server
             if (disposing)
             {
                 Close();
+
+                if (ClientConnection != null)
+                    ClientConnection.Dispose();
+
+                if (ServerConnection != null)
+                    ServerConnection.Dispose();
             }
 
             IsDisposed = true;

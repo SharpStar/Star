@@ -87,8 +87,8 @@ namespace SharpStar.Server
 
             proxy.ConnectionClosed += Proxy_ConnectionClosed;
 
-            RegisterHeartbeatCheck(proxy);
             RegisterAccountCheck(proxy);
+            RegisterHeartbeatCheck(proxy);
         }
 
         private void Proxy_ConnectionClosed(object sender, ProxyConnectionEventArgs e)
@@ -104,9 +104,6 @@ namespace SharpStar.Server
             if (!Program.Configuration.EnableSharpAccounts)
                 return;
 
-            if (!proxy.Connected || proxy.ServerConnection == null || proxy.ClientConnection == null)
-                return;
-
             var sEvt = Observable.FromEventPattern<PacketEventArgs>(p => proxy.ServerConnection.PacketReceived += p,
                     p => proxy.ServerConnection.PacketReceived -= p).Select(p => p.EventArgs);
             var cEvt = Observable.FromEventPattern<PacketEventArgs>(p => proxy.ClientConnection.PacketReceived += p,
@@ -115,14 +112,15 @@ namespace SharpStar.Server
             var handshake = cEvt.Where(p => p.Packet is HandshakeResponsePacket).Take(1);
             var success = sEvt.Where(p => p.Packet is ConnectSuccessPacket).Take(1);
 
-            handshake.Merge(success).Take(2).CombineWithPrevious((p1, p2) => new
+            IDisposable sub = null;
+            sub = handshake.Merge(success).Take(2).CombineWithPrevious((p1, p2) => new
             {
                 Proxy = p2.Proxy,
                 Previous = p1,
                 Current = p2
-            }).Subscribe(p =>
+            }).Subscribe(async p =>
             {
-                if (p.Proxy.Player.AuthAttempted)
+                if (p.Proxy != null && p.Proxy.Player.AuthAttempted)
                 {
                     if (p.Previous == null && p.Current.Packet is ConnectSuccessPacket)
                     {
@@ -130,12 +128,29 @@ namespace SharpStar.Server
                     }
                     else if (p.Previous != null && p.Previous.Packet is ConnectSuccessPacket && p.Current.Packet is HandshakeResponsePacket)
                     {
+                        p.Current.Packet.Ignore = true;
                         p.Previous.Packet.Ignore = false;
 
-                        p.Proxy.ClientConnection.SendPacket(p.Previous.Packet);
+                        await p.Proxy.ClientConnection.SendPacketAsync(p.Previous.Packet);
+                    }
+                    else
+                    {
+                        if (sub != null)
+                            sub.Dispose();
                     }
                 }
+                else
+                {
+                    if (sub != null)
+                        sub.Dispose();
+                }
             });
+
+            proxy.ConnectionClosed += (s, e) =>
+             {
+                 if (sub != null)
+                     sub.Dispose();
+             };
         }
 
         protected void RegisterHeartbeatCheck(StarProxy proxy)

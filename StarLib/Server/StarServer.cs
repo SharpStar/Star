@@ -196,33 +196,25 @@ namespace StarLib.Server
             if (ServerRunning)
                 throw new Exception("Server is already running!");
 
-            //ListenSocket = new Socket(LocalEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            //ListenSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-            //ListenSocket.Bind(LocalEndPoint);
-            //ListenSocket.Listen(ServerConfig.MaxConnections);
-
             AcceptingConnections = true;
 
-            Task.Run(() =>
+            ListenSocket = new TcpListener(LocalEndPoint.Address, LocalEndPoint.Port);
+            ListenSocket.Server.NoDelay = true;
+            //ListenSocket.Server.ReceiveBufferSize = 2048;
+            //ListenSocket.Server.SendBufferSize = 2048;
+
+            try
             {
-                ListenSocket = new TcpListener(LocalEndPoint.Address, LocalEndPoint.Port);
-                ListenSocket.Server.NoDelay = true;
-                //ListenSocket.Server.ReceiveBufferSize = 2048;
-                //ListenSocket.Server.SendBufferSize = 2048;
+                ListenSocket.Start();
+            }
+            catch (Exception ex)
+            {
+                ex.LogError();
+            }
 
-                try
-                {
-                    ListenSocket.Start();
-                }
-                catch (Exception ex)
-                {
-                    ex.LogError();
-                }
+            Interlocked.CompareExchange(ref _serverRunning, 1, 0);
 
-                Interlocked.CompareExchange(ref _serverRunning, 1, 0);
-
-                return StartAccept();
-            });
+            Task.Run(() => StartAccept());
         }
 
         /// <summary>
@@ -255,19 +247,15 @@ namespace StarLib.Server
             {
                 TcpClient client = await ListenSocket.AcceptTcpClientAsync();
                 await ProcessAccept(client);
-
-                //bool willRaiseEvent = ListenSocket.AcceptAsync(acceptEventArg);
-                //if (!willRaiseEvent)
-                //{
-                //	ProcessAccept(acceptEventArg);
-                //}
             }
             catch
             {
             }
-
-            if (ServerRunning)
-                await StartAccept();
+            finally
+            {
+                if (ServerRunning)
+                    await StartAccept();
+            }
         }
 
         protected async Task ProcessAccept(TcpClient client)
@@ -296,6 +284,8 @@ namespace StarLib.Server
             {
                 StarLog.DefaultLogger.Warn("Exceeded maximum amount of users! Disconnecting {0}", client.Client.RemoteEndPoint);
 
+                //TODO: Simulate connnection, return error message to player
+
                 client.Client.Shutdown(SocketShutdown.Both);
                 client.Client.Close();
 
@@ -305,8 +295,9 @@ namespace StarLib.Server
             Interlocked.Increment(ref _numConnected);
             Interlocked.Increment(ref _totalJoined);
 
-
-            new Thread(async () =>
+#pragma warning disable 4014
+            Task.Run(async () =>
+#pragma warning restore 4014
             {
                 try
                 {
@@ -320,7 +311,7 @@ namespace StarLib.Server
                     StarServerConnection server = new StarServerConnection(_packetTypes);
                     server.RegisterPacketHandlers(_packetHandlers);
 
-                    StarProxy starProxy = new StarProxy(this, cl, server);
+                    var starProxy = new StarProxy(this, cl, server);
                     starProxy.ConnectionClosed += (s, args) => Interlocked.Decrement(ref _numConnected);
 
                     Proxies.AddProxy(starProxy.ConnectionId, starProxy);
@@ -331,7 +322,7 @@ namespace StarLib.Server
                 {
                     ex.LogError();
                 }
-            }).Start();
+            });
         }
     }
 }

@@ -34,7 +34,7 @@ namespace SharpStar.PacketHandlers
 {
     public class ClientConnectHandler : PacketHandler<ClientConnectPacket>
     {
-        public override void Handle(ClientConnectPacket packet, StarConnection connection)
+        public override async Task HandleAsync(ClientConnectPacket packet, StarConnection connection)
         {
             Player plr = connection.Proxy.Player;
 
@@ -42,18 +42,18 @@ namespace SharpStar.PacketHandlers
             plr.Uuid = packet.Uuid;
 
             string uuid = plr.Uuid.Id;
-            Character ch = StarMain.Instance.Database.GetCharacterByUuid(uuid) ?? new Character();
+            Character ch = await StarMain.Instance.Database.GetCharacterByUuidAsync(uuid) ?? new Character();
 
             ch.Name = plr.Name;
             ch.Uuid = uuid;
             ch.LastIpAddress = connection.Proxy.ClientConnection.RemoteEndPoint.Address.ToString();
             ch.AccountId = null;
 
-            StarMain.Instance.Database.SaveCharacter(ch);
+            await StarMain.Instance.Database.SaveCharacterAsync(ch);
 
             if (!string.IsNullOrEmpty(packet.Account) && Program.Configuration.EnableSharpAccounts)
             {
-                Account account = StarMain.Instance.Database.GetAccountByUsername(packet.Account);
+                Account account = await StarMain.Instance.Database.GetAccountByUsernameAsync(packet.Account);
 
                 if (account == null)
                     return;
@@ -64,33 +64,33 @@ namespace SharpStar.PacketHandlers
 
                 connection.Proxy.Player.AuthAttempted = true;
 
-                connection.Proxy.ClientConnection.SendPacket(new HandshakeChallengePacket
+                await connection.Proxy.ClientConnection.SendPacketAsync(new HandshakeChallengePacket
                 {
                     Salt = Encoding.UTF8.GetBytes(account.PasswordSalt)
                 });
             }
             else
             {
-                Ban ban = StarMain.Instance.Database.GetBanByIp(connection.Proxy.ClientConnection.RemoteEndPoint.Address.ToString());
+                Ban ban = await StarMain.Instance.Database.GetBanByIpAsync(connection.Proxy.ClientConnection.RemoteEndPoint.Address.ToString());
                 if (ban != null && ban.Active)
                 {
                     if (DateTime.Now > ban.ExpirationTime)
                     {
                         ban.Active = false;
 
-                        StarMain.Instance.Database.SaveBan(ban);
-                        StarMain.Instance.Database.AddEvent(string.Format("The ban for uuid {0} ({1}) has been lifted", plr.Uuid.Id, plr.Name),
+                        await StarMain.Instance.Database.SaveBanAsync(ban);
+                        await StarMain.Instance.Database.AddEventAsync(string.Format("The ban for uuid {0} ({1}) has been lifted", plr.Uuid.Id, plr.Name),
                             new[] { "auto" });
                     }
                     else
                     {
-                        connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
+                        await connection.Proxy.ClientConnection.SendPacketAsync(new ConnectFailurePacket
                         {
                             Reason = string.Format(StarMain.Instance.CurrentLocalization["BanReasonMessage"].Replace("\\n", "\n"), ban.Reason,
                                 ban.ExpirationTime.ToString(StarMain.Instance.CurrentLocalization["BanMessageExpirationDateFormat"]))
                         });
 
-                        StarMain.Instance.Database.AddEvent(string.Format("Banned uuid {0} ({1}) attempted to join!", plr.Uuid.Id, plr.Name),
+                        await StarMain.Instance.Database.AddEventAsync(string.Format("Banned uuid {0} ({1}) attempted to join!", plr.Uuid.Id, plr.Name),
                             new[] { "bans" });
 
                         return;
@@ -101,8 +101,9 @@ namespace SharpStar.PacketHandlers
             }
         }
 
-        public override void HandleSent(ClientConnectPacket packet, StarConnection connection)
+        public override Task HandleSentAsync(ClientConnectPacket packet, StarConnection connection)
         {
+            return Task.FromResult(false);
         }
     }
 }

@@ -91,26 +91,39 @@ namespace StarLib.DataTypes
 			throw new Exception("Error parsing VLQ");
 		}
 
-		public static ulong FromBuffer(byte[] buffer, int offset, int length, out int size)
+        public static ulong FromEnumerable(IEnumerable<byte> buffer, int offset, int count, out int size)
+        {
+            int ctr = 0;
+            ulong value = 0L;
+            foreach (byte b in buffer.Skip(offset).Take(count))
+            {
+
+                value = (value << 7) | (uint)(b & 0x7f);
+
+                if ((b & 0x80) == 0)
+                {
+                    size = ctr + 1;
+                    return value;
+                }
+
+                ctr++;
+            }
+
+            throw new Exception("Error parsing VLQ");
+        }
+
+        public static long FromEnumerableSigned(IEnumerable<byte> buffer, int offset, int length, out int size)
+        {
+            ulong value = FromEnumerable(buffer, offset, length, out size);
+
+            if ((value & 1) == 0x00)
+                return (long)value >> 1;
+
+            return -((long)(value >> 1) + 1);
+        }
+
+        public static ulong FromBuffer(byte[] buffer, int offset, int length, out int size)
 		{
-			//int ctr = offset;
-			//ulong value = 0L;
-			//while (ctr < length)
-			//{
-			//	byte tmp = buffer[ctr];
-
-			//	value = (value << 7) | (uint)(tmp & 0x7f);
-
-			//	if ((tmp & 0x80) == 0)
-			//	{
-			//		size = ctr + 1;
-			//		return value;
-			//	}
-
-			//	ctr++;
-			//}
-
-			//throw new Exception("Error parsing VLQ");
 			ulong value = FromFunc(ctr => buffer[ctr + offset], ctr => ctr + offset < length, out size);
 			size += offset;
 

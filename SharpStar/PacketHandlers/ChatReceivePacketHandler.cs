@@ -38,7 +38,7 @@ namespace SharpStar.PacketHandlers
 			PlrManager.AddCommand(new PlayerHelpCommand());
 		}
 
-		public override void Handle(ChatReceivePacket packet, StarConnection connection)
+		public override Task HandleAsync(ChatReceivePacket packet, StarConnection connection)
 		{
 			if (packet.Message.StartsWith("/"))
 			{
@@ -50,10 +50,13 @@ namespace SharpStar.PacketHandlers
 
 				packet.Ignore = true;
 			}
+
+            return Task.FromResult(false);
 		}
 
-		public override void HandleSent(ChatReceivePacket packet, StarConnection connection)
+		public override Task HandleSentAsync(ChatReceivePacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 	}
 }

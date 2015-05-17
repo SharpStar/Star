@@ -33,20 +33,20 @@ namespace StarLib.Server
 
         protected ConcurrentDictionary<string, StarProxy> Connections;
 
-		public int Count
-		{
-			get
-			{
-				return Connections.Count;
-			}
-		}
+        public int Count
+        {
+            get
+            {
+                return Connections.Count;
+            }
+        }
 
         public StarProxyManager()
         {
             Connections = new ConcurrentDictionary<string, StarProxy>();
         }
 
-        public bool AddProxy(string connId, StarProxy proxy)
+        public void AddProxy(string connId, StarProxy proxy)
         {
             if (connId == null)
                 throw new ArgumentNullException("connId");
@@ -60,14 +60,11 @@ namespace StarLib.Server
                 proxy.Dispose();
             };
 
-            if (!Connections.TryAdd(connId, proxy))
-                return false;
+            Connections.AddOrUpdate(connId, proxy, (s, p) => p);
 
             EventHandler<ProxyConnectionEventArgs> connectionAdded = ConnectionAdded;
             if (connectionAdded != null)
                 connectionAdded(this, new ProxyConnectionEventArgs(proxy));
-
-            return true;
         }
 
         public bool RemoveProxy(string connId)

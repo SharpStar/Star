@@ -29,7 +29,7 @@ namespace SharpStar.PacketHandlers
 {
 	public class ConnectSuccessHandler : PacketHandler<ConnectSuccessPacket>
 	{
-		public override void Handle(ConnectSuccessPacket packet, StarConnection connection)
+		public override Task HandleAsync(ConnectSuccessPacket packet, StarConnection connection)
 		{
 			if (!connection.Proxy.Player.AuthSuccess)
 				packet.Ignore = true;
@@ -38,10 +38,13 @@ namespace SharpStar.PacketHandlers
 				StarLog.DefaultLogger.Info("Player {0} ({1}) has joined", connection.Proxy.Player.Name, connection.Proxy.Player.Account.Username);
 			else
 				StarLog.DefaultLogger.Info("Player {0} has joined", connection.Proxy.Player.Name);
+
+            return Task.FromResult(false);
 		}
 
-		public override void HandleSent(ConnectSuccessPacket packet, StarConnection connection)
+		public override Task HandleSentAsync(ConnectSuccessPacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 	}
 }

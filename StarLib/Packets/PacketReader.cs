@@ -103,13 +103,14 @@ namespace StarLib.Packets
         /// </summary>
         /// <param name="buffer">The buffer to read from</param>
         /// <param name="offset">The position to start at</param>
+        /// <param name="length">The length of the buffer</param>
         /// <returns>One or more packets that have been decoded from the buffer</returns>
-        public List<Packet> Read(byte[] buffer, int offset)
+        public List<Packet> Read(byte[] buffer, int offset, int length)
         {
             var packets = new List<Packet>();
-            
-            _processor.ProcessNextSegment(buffer, offset); //first segment
 
+            _processor.ProcessNextSegment(buffer, offset, length); //first segment
+            
             if (_processor.CurrentPacketData == null)
                 return packets;
 
@@ -117,7 +118,7 @@ namespace StarLib.Packets
             {
                 packets.Add(Decode(_processor.CurrentPacketId, _processor.CurrentPacketData));
 
-                if (!_processor.ProcessNextSegment(EmptyBuffer, 0))
+                if (!_processor.ProcessNextSegment(EmptyBuffer, offset, length))
                 {
                     if (_processor.CurrentPacketData != null)
                         packets.Add(Decode(_processor.CurrentPacketId, _processor.CurrentPacketData));

@@ -46,8 +46,10 @@ namespace StarLib.Events
             PassEventAsync(key, val).Wait();
         }
 
-		public async Task PassEventAsync(TKey key, TVal val)
+		public Task PassEventAsync(TKey key, TVal val)
 		{
+            var tasks = new List<Task>();
+
 			foreach (var evtMethod in Methods.Where(p => p.Key.Equals(key)))
 			{
                 if (evtMethod is EventMethod<TKey, TVal>)
@@ -56,9 +58,11 @@ namespace StarLib.Events
                 }
                 else if (evtMethod is AsyncEventMethod<TKey, TVal>)
                 {
-                    await ((AsyncEventMethod<TKey, TVal>)evtMethod).ExecuteAsync(val);
+                    tasks.Add(((AsyncEventMethod<TKey, TVal>)evtMethod).ExecuteAsync(val));
                 }
 			}
+
+            return Task.WhenAll(tasks);
 		}
 
 	}

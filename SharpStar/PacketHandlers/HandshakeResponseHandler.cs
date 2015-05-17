@@ -29,13 +29,13 @@ namespace SharpStar.PacketHandlers
 {
     public class HandshakeResponseHandler : PacketHandler<HandshakeResponsePacket>
     {
-        public override void Handle(HandshakeResponsePacket packet, StarConnection connection)
+        public override async Task HandleAsync(HandshakeResponsePacket packet, StarConnection connection)
         {
             Account account = connection.Proxy.Player.Account;
 
             if (account != null)
             {
-                Ban acctBan = StarMain.Instance.Database.GetBanByAccount(account.Id);
+                Ban acctBan = await StarMain.Instance.Database.GetBanByAccountAsync(account.Id);
 
                 if (acctBan != null && acctBan.Active)
                 {
@@ -44,20 +44,20 @@ namespace SharpStar.PacketHandlers
                     {
                         acctBan.Active = false;
 
-                        StarMain.Instance.Database.SaveBan(acctBan);
-                        StarMain.Instance.Database.AddEvent(
+                        await StarMain.Instance.Database.SaveBanAsync(acctBan);
+                        await StarMain.Instance.Database.AddEventAsync(
                             string.Format("The ban for account {0} ({1}) has been lifted", account.Username, connection.Proxy.Player.Name),
                             new[] { "auto" });
                     }
                     else
                     {
-                        connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
+                        await connection.Proxy.ClientConnection.SendPacketAsync(new ConnectFailurePacket
                         {
                             Reason = string.Format(StarMain.Instance.CurrentLocalization["BanReasonMessage"].Replace("\\n", "\n"), acctBan.Reason,
                             acctBan.ExpirationTime.ToString(StarMain.Instance.CurrentLocalization["BanMessageExpirationDateFormat"]))
                         });
 
-                        StarMain.Instance.Database.AddEvent(
+                        await StarMain.Instance.Database.AddEventAsync(
                             string.Format("Banned account {0} ({1}) attempted to join!", account.Username, connection.Proxy.Player.Name),
                             new[] { "bans" });
 
@@ -71,12 +71,12 @@ namespace SharpStar.PacketHandlers
 
                 if (!connection.Proxy.Player.AuthSuccess)
                 {
-                    connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
+                    await connection.Proxy.ClientConnection.SendPacketAsync(new ConnectFailurePacket
                     {
                         Reason = StarMain.Instance.CurrentLocalization["WrongPasswordError"]
                     });
 
-                    StarMain.Instance.Database.AddEvent(
+                    await StarMain.Instance.Database.AddEventAsync(
                         string.Format("Player {0} ({1}) failed to login with the username {2}", connection.Proxy.Player.Name,
                         connection.Proxy.Player.Uuid.Id, connection.Proxy.Player.Account.Username), new[] { "auth" });
 
@@ -85,11 +85,11 @@ namespace SharpStar.PacketHandlers
                 else
                 {
                     //add the character to the databse and associate it with the account
-                    Character ch = StarMain.Instance.Database.GetCharacterByUuid(connection.Proxy.Player.Uuid.Id) ?? new Character();
+                    Character ch = await StarMain.Instance.Database.GetCharacterByUuidAsync(connection.Proxy.Player.Uuid.Id) ?? new Character();
 
                     ch.AccountId = account.Id;
 
-                    StarMain.Instance.Database.SaveCharacter(ch);
+                    await StarMain.Instance.Database.SaveCharacterAsync(ch);
                 }
             }
             else if (!connection.Proxy.Player.AuthAttempted)
@@ -98,15 +98,16 @@ namespace SharpStar.PacketHandlers
             }
             else
             {
-                connection.Proxy.ClientConnection.SendPacket(new ConnectFailurePacket
+                await connection.Proxy.ClientConnection.SendPacketAsync(new ConnectFailurePacket
                 {
                     Reason = StarMain.Instance.CurrentLocalization["WrongPasswordError"]
                 });
             }
         }
 
-        public override void HandleSent(HandshakeResponsePacket packet, StarConnection connection)
+        public override Task HandleSentAsync(HandshakeResponsePacket packet, StarConnection connection)
         {
+            return Task.FromResult(false);
         }
     }
 }

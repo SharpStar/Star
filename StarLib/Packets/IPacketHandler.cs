@@ -29,8 +29,8 @@ namespace StarLib.Packets
 
         Type Type { get; }
 
-        void HandleBefore(Packet packet, StarConnection connection);
+        Task HandleBeforeAsync(Packet packet, StarConnection connection);
 
-        void HandleAfter(Packet packet, StarConnection connection);
+        Task HandleAfterAsync(Packet packet, StarConnection connection);
     }
 }

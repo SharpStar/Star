@@ -27,12 +27,14 @@ namespace SharpStar.PacketHandlers
 {
 	public class ClientDisconnectRequestHandler : PacketHandler<ClientDisconnectRequestPacket>
 	{
-		public override void Handle(ClientDisconnectRequestPacket packet, StarConnection connection)
+		public override Task HandleAsync(ClientDisconnectRequestPacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 
-		public override void HandleSent(ClientDisconnectRequestPacket packet, StarConnection connection)
+		public override Task HandleSentAsync(ClientDisconnectRequestPacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 	}
 }

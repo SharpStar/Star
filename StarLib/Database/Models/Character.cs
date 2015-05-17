@@ -19,23 +19,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ServiceStack.DataAnnotations;
+using SQLite.Net.Attributes;
+using SQLiteNetExtensions.Attributes;
 
 namespace StarLib.Database.Models
 {
     public class Character
     {
-        [AutoIncrement]
+        [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
         public string Name { get; set; }
 
-        [Index(Unique = true)]
+        [Indexed(Unique = true)]
         public string Uuid { get; set; }
 
         public string LastIpAddress { get; set; }
 
-        [References(typeof(Account))]
+        [ForeignKey(typeof(Account))]
         public int? AccountId { get; set; }
     }
 }

@@ -31,7 +31,7 @@ namespace SharpStar.PacketHandlers
 {
 	public class ChatSendHandler : PacketHandler<ChatSendPacket>
 	{
-		public override void Handle(ChatSendPacket packet, StarConnection connection)
+		public override Task HandleAsync(ChatSendPacket packet, StarConnection connection)
 		{
 			if (packet.Text.StartsWith("/"))
 			{
@@ -50,7 +50,7 @@ namespace SharpStar.PacketHandlers
 				{
 					packet.Ignore = true;
 
-					return;
+					return Task.FromResult(false);
 				}
 
 				foreach (IPluginManager pm in StarMain.Instance.PluginManagers)
@@ -61,10 +61,13 @@ namespace SharpStar.PacketHandlers
 
 				packet.Ignore = found;
 			}
+
+            return Task.FromResult(false);
 		}
 
-		public override void HandleSent(ChatSendPacket packet, StarConnection connection)
+		public override Task HandleSentAsync(ChatSendPacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 	}
 }

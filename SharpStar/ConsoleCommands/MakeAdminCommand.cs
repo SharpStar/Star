@@ -14,11 +14,11 @@ namespace SharpStar.ConsoleCommands
     {
         public MakeAdminCommand() : base(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandName"] ?? "makeadmin")
         {
-            Parts["{0} yes"] = p =>
+            Parts["{0} yes"] = async p =>
             {
                 string username = p.Arguments[0];
 
-                Account account = StarMain.Instance.Database.GetAccountByUsername(username);
+                Account account = await StarMain.Instance.Database.GetAccountByUsernameAsync(username);
 
                 if (account == null)
                 {
@@ -29,17 +29,17 @@ namespace SharpStar.ConsoleCommands
 
                 account.IsAdmin = true;
 
-                StarMain.Instance.Database.SaveAccount(account);
+                await StarMain.Instance.Database.SaveAccountAsync(account);
 
                 StarLog.DefaultLogger.Info(string.Format(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandSuccessMessageFormat"],
                     account.Username, "yes"));
             };
 
-            Parts["{0} no"] = p =>
+            Parts["{0} no"] = async p =>
             {
                 string username = p.Arguments[0];
 
-                Account account = StarMain.Instance.Database.GetAccountByUsername(username);
+                Account account = await StarMain.Instance.Database.GetAccountByUsernameAsync(username);
 
                 if (account == null)
                 {
@@ -50,7 +50,7 @@ namespace SharpStar.ConsoleCommands
 
                 account.IsAdmin = false;
 
-                StarMain.Instance.Database.SaveAccount(account);
+                await StarMain.Instance.Database.SaveAccountAsync(account);
 
                 StarLog.DefaultLogger.Info(string.Format(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandSuccessMessageFormat"],
                     account.Username, "no"));

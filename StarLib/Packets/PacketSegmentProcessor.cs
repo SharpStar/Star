@@ -32,7 +32,7 @@ namespace StarLib.Packets
     /// </summary>
     public class PacketSegmentProcessor
     {
-        public byte[] PacketBuffer { get; private set; }
+        public List<byte> PacketBuffer { get; private set; }
 
         public byte CurrentPacketId { get; private set; }
 
@@ -43,37 +43,26 @@ namespace StarLib.Packets
         /// </summary>
         public PacketSegmentProcessor()
         {
-            PacketBuffer = new byte[0];
+            PacketBuffer = new List<byte>();
         }
 
         /// <summary>
         /// Processes the next segment of data and gives the packet id and packet data (if any)
         /// </summary>
         /// <param name="nextSegment">The next segment to be processed</param>
-        /// <param name="offset">The position to start at</param>
+        /// <param name="offset"></param>
+        /// <param name="len"></param>
         /// <returns>True if more needs to be processed, false if complete</returns>
-        public bool ProcessNextSegment(byte[] nextSegment, int offset)
+        public bool ProcessNextSegment(byte[] nextSegment, int offset, int len)
         {
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
-
             CurrentPacketData = null;
 
             if (nextSegment.Length > 0)
             {
-                //create a new buffer that will fit the amount of data to be held
-                byte[] newBuffer = new byte[PacketBuffer.Length + (nextSegment.Length - offset)];
-
-                //copy over the data from the (soon to be) old buffer to the new one
-                if (PacketBuffer.Length > 0)
-                    Buffer.BlockCopy(PacketBuffer, 0, newBuffer, 0, PacketBuffer.Length);
-
-                Buffer.BlockCopy(nextSegment, offset, newBuffer, PacketBuffer.Length, nextSegment.Length - offset);
-
-                PacketBuffer = newBuffer; //set the packet buffer to the new one
+                PacketBuffer.AddRange(nextSegment.Skip(offset).Take(len));
             }
 
-            if (PacketBuffer.Length <= 1)
+            if (PacketBuffer.Count <= 1)
                 return false;
 
             //packetId = reader.ReadByte();
@@ -85,27 +74,29 @@ namespace StarLib.Packets
             try
             {
                 //length = reader.ReadSignedVLQ();
-                length = VLQ.FromBufferSigned(PacketBuffer, 1, PacketBuffer.Length, out pos); //the length of the packet
+                length = VLQ.FromEnumerableSigned(PacketBuffer, 1, PacketBuffer.Count, out pos); //the length of the packet
             }
             catch //we don't have enough data yet! 
             {
                 return false;
             }
 
+            pos += 1;
+
             bool compressed = length < 0;
 
             if (compressed)
                 length = -length;
 
-            if (PacketBuffer.Length < length + pos)
+            if (PacketBuffer.Count < length + pos)
                 return false;
 
-            byte[] data = new byte[(int)length];
-            Buffer.BlockCopy(PacketBuffer, pos, data, 0, data.Length);
+            byte[] data = PacketBuffer.Skip(pos).Take((int)length).ToArray();
+            //Buffer.BlockCopy(PacketBuffer, pos, data, 0, data.Length);
 
             pos += data.Length;
 
-            if (compressed) //uncompress this packet if it has been compressed
+            if (compressed) //decompress this packet if it has been compressed
             {
                 using (MemoryStream ms = new MemoryStream(data))
                 {
@@ -115,7 +106,7 @@ namespace StarLib.Packets
                         {
                             zs.CopyTo(outStream);
                         }
-                        
+
                         data = outStream.ToArray();
                     }
                 }
@@ -125,14 +116,11 @@ namespace StarLib.Packets
 
             CurrentPacketData = data;
 
-            //set the packet buffer to the remaining data for the next packet to process
-            //byte[] rest = reader.ReadToEnd();
-            byte[] rest = new byte[PacketBuffer.Length - pos];
-            Buffer.BlockCopy(PacketBuffer, pos, rest, 0, rest.Length);
+            //remove the data already processed
+            PacketBuffer.RemoveRange(0, pos);
 
-            PacketBuffer = rest;
-
-            return rest.Length > 0;
+            //return true if there are any more packets needing to be processed
+            return PacketBuffer.Count > 0;
         }
     }
 }

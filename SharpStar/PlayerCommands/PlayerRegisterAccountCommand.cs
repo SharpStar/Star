@@ -29,13 +29,13 @@ namespace SharpStar.PlayerCommands
 	{
 		public PlayerRegisterAccountCommand() : base(StarMain.Instance.CurrentLocalization["PlayerRegisterAccountCommandName"])
 		{
-			Parts[string.Empty] = p =>
+			Parts[string.Empty] = async p =>
 			{
-				p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+				await p.Player.Proxy.SendChatMessageAsync(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
 					GetHelp(null));
 			};
 
-			Parts["{0} {1} {2}"] = p =>
+			Parts["{0} {1} {2}"] = async p =>
 			{
 				string username = p.Arguments[0];
 				string password = p.Arguments[1];
@@ -49,7 +49,7 @@ namespace SharpStar.PlayerCommands
 					return;
 				}
 
-				if (StarMain.Instance.Database.CreateAccount(username, password))
+				if (await StarMain.Instance.Database.CreateAccountAsync(username, password))
 				{
 					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"], 
 						StarMain.Instance.CurrentLocalization["PlayerRegisterAccountCreatedMessage"]);

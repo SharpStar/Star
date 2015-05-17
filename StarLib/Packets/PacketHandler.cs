@@ -29,9 +29,9 @@ namespace StarLib.Packets
     /// <typeparam name="T">The type of packet to handle</typeparam>
     public abstract class PacketHandler<T> : IPacketHandler where T : Packet, new()
     {
-        public abstract void Handle(T packet, StarConnection connection);
+        public abstract Task HandleAsync(T packet, StarConnection connection);
 
-        public abstract void HandleSent(T packet, StarConnection connection);
+        public abstract Task HandleSentAsync(T packet, StarConnection connection);
 
         public Type Type
         {
@@ -46,14 +46,14 @@ namespace StarLib.Packets
             }
         }
 
-        public void HandleBefore(Packet packet, StarConnection connection)
+        public Task HandleBeforeAsync(Packet packet, StarConnection connection)
         {
-            Handle((T)packet, connection);
+            return HandleAsync((T)packet, connection);
         }
 
-        public void HandleAfter(Packet packet, StarConnection connection)
+        public Task HandleAfterAsync(Packet packet, StarConnection connection)
         {
-            HandleSent((T)packet, connection);
+            return HandleSentAsync((T)packet, connection);
         }
     }
 }

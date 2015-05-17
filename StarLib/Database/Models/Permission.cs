@@ -19,20 +19,24 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ServiceStack.DataAnnotations;
+using SQLite.Net.Attributes;
+using SQLiteNetExtensions.Attributes;
 
 namespace StarLib.Database.Models
 {
 	public class Permission
 	{
-		[AutoIncrement]
+		[PrimaryKey, AutoIncrement]
 		public int Id { get; set; }
 
-        [References(typeof(Account))]
+        [ForeignKey(typeof(Account))]
         public int AccountId { get; set; }
 
 		public string Name { get; set; }
 		
 		public bool Allowed { get; set; }
+
+        [ManyToMany(typeof(PermissionGroup))]
+        public List<Group> Groups { get; set; }
 	}
 }

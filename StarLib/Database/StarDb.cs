@@ -20,14 +20,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using ServiceStack.OrmLite;
+using System.Threading.Tasks;
 using StarLib.Database.Models;
 using StarLib.Security;
-using StarLib.Starbound;
+using SQLiteNetExtensionsAsync.Extensions;
 
 namespace StarLib.Database
 {
-    public sealed class StarDb : SqliteDb
+    public sealed class StarDb : SqliteAsyncDb
     {
         public const string StarDbFileName = "star.db";
         public const string DbDirectory = "databases";
@@ -41,8 +41,6 @@ namespace StarLib.Database
         {
             _migrator = new DbMigrator(StarDbFileName);
 
-            CreateTables();
-
 #if !DEBUG
             Migrate();
 #endif
@@ -53,285 +51,208 @@ namespace StarLib.Database
             _migrator.MigrateUp();
         }
 
-        public void CreateTables()
+        public  Task CreateTablesAsync()
         {
-            using (var conn = CreateConnection())
-            {
-                conn.CreateTableIfNotExists<Account>();
-                conn.CreateTableIfNotExists<Group>();
-                conn.CreateTableIfNotExists<Permission>();
-                conn.CreateTableIfNotExists<Character>();
-                conn.CreateTableIfNotExists<Ban>();
-                conn.CreateTableIfNotExists<EventHistory>();
-                conn.CreateTableIfNotExists<EventType>();
-            }
+            var tasks = new List<Task>();
+            tasks.Add(Connection.CreateTableAsync<Account>());
+            tasks.Add(Connection.CreateTableAsync<Ban>());
+            tasks.Add(Connection.CreateTableAsync<Character>());
+            tasks.Add(Connection.CreateTableAsync<EventHistory>());
+            tasks.Add(Connection.CreateTableAsync<EventType>());
+            tasks.Add(Connection.CreateTableAsync<EventTypeHistory>());
+            tasks.Add(Connection.CreateTableAsync<Group>());
+            tasks.Add(Connection.CreateTableAsync<Permission>());
+            tasks.Add(Connection.CreateTableAsync<PermissionGroup>());
+
+            return Task.WhenAll(tasks);
         }
 
-        public Character GetCharacter(int id)
+        public Task<Character> GetCharacterAsync(int id)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.LoadSingleById<Character>(id);
-            }
+            return Connection.GetAsync<Character>(id);
         }
 
-        public Character GetCharacterByUuid(string uuid)
+        public Task<Character> GetCharacterByUuidAsync(string uuid)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.Single<Character>(new
-                {
-                    Uuid = uuid
-                });
-            }
+            return Connection.Table<Character>().Where(p => p.Uuid == uuid).FirstOrDefaultAsync();
         }
 
-        public void SaveCharacter(Character character)
+        public Task SaveCharacterAsync(Character character)
         {
-            using (var conn = CreateConnection())
-            {
-                conn.Save(character);
-            }
+            return Connection.InsertOrReplaceAsync(character);
         }
 
-        public bool CreateAccount(string username, string password, int? groupId = null)
+        public async Task<bool> CreateAccountAsync(string username, string password, int? groupId = null)
         {
-            using (var conn = CreateConnection())
+            if (await Connection.Table<Account>().Where(p => p.Username.ToUpper() == username.ToUpper()).CountAsync() > 0)
+                return false;
+
+            string salt = StarSecurity.GenerateSecureString();
+            string hash = StarSecurity.GenerateHash(username, password, Encoding.UTF8.GetBytes(salt));
+
+            Account account = new Account
             {
-                if (conn.Count<Account>(p => p.Username.ToUpper() == username.ToUpper()) > 0)
-                    return false;
+                Username = username,
+                InternalId = Guid.NewGuid(),
+                PasswordSalt = salt,
+                PasswordHash = hash,
+                GroupId = groupId
+            };
 
-                string salt = StarSecurity.GenerateSecureString();
-                string hash = StarSecurity.GenerateHash(username, password, Encoding.UTF8.GetBytes(salt));
-
-                Account account = new Account
-                {
-                    Username = username,
-                    InternalId = Guid.NewGuid(),
-                    PasswordSalt = salt,
-                    PasswordHash = hash,
-                    GroupId = groupId
-                };
-
-                conn.Save(account);
-            }
+            await Connection.InsertAsync(account);
 
             return true;
         }
 
-        public Account GetAccount(int id)
+        public Task<Account> GetAccountAsync(int id)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.LoadSingleById<Account>(id);
-            }
+            return Connection.GetWithChildrenAsync<Account>(id);
         }
 
-        public Account GetAccountByUsername(string username)
+        public Task<Account> GetAccountByUsernameAsync(string username)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.Single<Account>(new
-                {
-                    Username = username
-                });
-            }
+            return Connection.Table<Account>().Where(p => p.Username.ToUpper() == username.ToUpper()).FirstOrDefaultAsync();
         }
 
-        public void SaveAccount(Account account)
+        public Task SaveAccountAsync(Account account)
         {
-            using (var conn = CreateConnection())
-            {
-                conn.Save(account);
-                conn.SaveAllReferences(account);
-            }
+            return Connection.UpdateWithChildrenAsync(account);
         }
 
-        public bool AddBan(string playerName, string playerIp, int? accountId, DateTime expirationTime, string reason = "")
+        public async Task<bool> AddBanAsync(string playerName, string playerIp, int? accountId, DateTime expirationTime, string reason = "")
         {
-            using (var conn = CreateConnection())
+            if (accountId.HasValue && await Connection.Table<Account>().Where(p => p.Id == accountId).CountAsync() > 0)
+                return false;
+
+            if (await Connection.Table<Ban>().Where(p => p.IpAddress == playerIp).CountAsync() > 0)
+                return false;
+
+            await Connection.InsertAsync(new Ban
             {
-                if (accountId.HasValue && conn.Count<Ban>(p => p.AccountId == accountId) > 0)
-                    return false;
-
-                if (conn.Count<Ban>(p => p.IpAddress == playerIp) > 0)
-                    return false;
-
-                conn.Save(new Ban
-                {
-                    PlayerName = playerName,
-                    AccountId = accountId,
-                    ExpirationTime = expirationTime,
-                    Reason = reason,
-                    IpAddress = playerIp,
-                    Active = true
-                });
-            }
+                PlayerName = playerName,
+                AccountId = accountId.HasValue ? accountId.Value : 0,
+                ExpirationTime = expirationTime,
+                Reason = reason,
+                IpAddress = playerIp,
+                Active = true
+            });
 
             return true;
         }
 
-        public void SaveBan(Ban ban)
+        public Task SaveBanAsync(Ban ban)
         {
-            using (var conn = CreateConnection())
-            {
-                conn.Save(ban);
-            }
+            return Connection.InsertOrReplaceAsync(ban);
         }
 
-        public bool RemoveBanByAccount(int accountId)
+        public async Task<bool> RemoveBanByAccountAsync(int accountId)
         {
-            using (var conn = CreateConnection())
-            {
-                Ban ban = GetBanByAccount(accountId);
+            Ban ban = await GetBanByAccountAsync(accountId);
 
-                if (ban == null)
-                    return false;
+            if (ban == null)
+                return false;
 
-                conn.DeleteById<Ban>(ban.Id);
-            }
+            await Connection.DeleteAsync(ban);
 
             return true;
         }
 
-        public bool RemoveBanByIp(string ip)
+        public async Task<bool> RemoveBanByIpAsync(string ip)
         {
-            using (var conn = CreateConnection())
-            {
-                Ban ban = GetBanByIp(ip);
+            Ban ban = await GetBanByIpAsync(ip);
 
-                if (ban == null)
-                    return false;
+            if (ban == null)
+                return false;
 
-                conn.DeleteById<Ban>(ban.Id);
-            }
+            await Connection.DeleteAsync(ban);
 
             return true;
         }
 
-        public Ban GetBanByAccount(int accountId)
+        public Task<Ban> GetBanByAccountAsync(int accountId)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.Single<Ban>(new
-                {
-                    AccountId = accountId
-                });
-            }
+            return Connection.Table<Ban>().Where(p => p.AccountId == accountId).FirstOrDefaultAsync();
         }
 
-        public Ban GetBanByIp(string ip)
+        public Task<Ban> GetBanByIpAsync(string ip)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.Single<Ban>(new
-                {
-                    IpAddress = ip
-                });
-            }
+            return Connection.Table<Ban>().Where(p => p.IpAddress == ip).FirstOrDefaultAsync();
         }
 
-        public bool CreateGroup(string name, bool isDefault = false)
+        public async Task<bool> CreateGroupAsync(string name, bool isDefault = false)
         {
-            using (var conn = CreateConnection())
+            if (await Connection.Table<Group>().Where(p => p.Name.ToUpper() == name.ToUpper()).CountAsync() > 0)
+                return false;
+
+            if (isDefault)
             {
-                if (conn.Count<Group>(p => p.Name.ToUpper() == name.ToUpper()) > 0)
-                    return false;
+                var groups = await Connection.Table<Group>().Where(p => p.IsDefault).ToListAsync();
 
-                if (isDefault)
+                foreach (Group group in groups)
                 {
-                    var groups = conn.Where<Group>(new
-                    {
-                        IsDefault = true
-                    });
+                    group.IsDefault = false;
 
-                    groups.ForEach(p =>
-                    {
-                        p.IsDefault = false;
-
-                        conn.Update(p);
-                    });
+                    await Connection.UpdateAsync(group);
                 }
-
-                conn.Save(new Group
-                {
-                    Name = name,
-                    IsDefault = isDefault
-                });
             }
+
+            await Connection.InsertAsync(new Group
+            {
+                Name = name,
+                IsDefault = isDefault
+            });
 
             return true;
         }
 
-        public Group GetGroup(int id)
+        public Task<Group> GetGroupAsync(int id)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.SingleById<Group>(id);
-            }
+            return Connection.GetAsync<Group>(id);
         }
 
-        public Group GetGroupByName(string name)
+        public Task<Group> GetGroupByNameAsync(string name)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.Single<Group>(new
-                {
-                    Name = name
-                });
-            }
+            return Connection.Table<Group>().Where(p => p.Name.ToUpper() == name.ToUpper()).FirstOrDefaultAsync();
         }
 
-        public IList<Group> GetGroupsWithPermission(string permission)
+        public async Task<List<Group>> GetGroupsWithPermissionAsync(string permission)
         {
-            using (var conn = CreateConnection())
-            {
-                return conn.Select(conn.From<Group>().Where(p => Sql.In(p.Permissions.Select(x => x.Name), permission)));
-            }
+            var perm = await Connection.Table<Permission>().Where(p => p.Name.ToUpper() == permission.ToUpper()).FirstOrDefaultAsync();
+
+            return perm.Groups;
         }
 
-        public void SaveGroup(Group group)
+        public Task SaveGroupAsync(Group group)
         {
-            using (var conn = CreateConnection())
-            {
-                conn.Save(group);
-            }
+            return Connection.InsertOrReplaceWithChildrenAsync(group);
         }
 
-        public void AddEvent(string text, string[] eventTypes, int? accountId = null)
+        public async Task AddEventAsync(string text, string[] eventTypes, int? accountId = null)
         {
-            using (var conn = CreateConnection())
+            EventHistory evt = new EventHistory
             {
-                EventHistory evt = new EventHistory
-                {
-                    Text = text,
-                    AccountId = accountId,
-                    EventTypes = new List<EventType>()
-                };
+                Text = text,
+                AccountId = accountId.HasValue ? accountId.Value : 0,
+                EventTypes = new List<EventType>()
+            };
 
-                foreach (string type in eventTypes)
-                {
-                    EventType evtType = conn.Single<EventType>(new
-                    {
-                        Name = type
-                    });
+            foreach (string type in eventTypes)
+            {
+                EventType evtType = await Connection.Table<EventType>().Where(p => p.Name.ToUpper() == type.ToUpper()).FirstOrDefaultAsync();
 
-                    if (evtType != null)
-                        evt.EventTypes.Add(evtType);
-                    else
-                        evt.EventTypes.Add(new EventType { Name = type });
-                }
-
-                conn.SaveAllReferences(evt);
+                if (evtType != null)
+                    evt.EventTypes.Add(evtType);
+                else
+                    evt.EventTypes.Add(new EventType { Name = type });
             }
+
+            await Connection.InsertOrReplaceAllAsync(evt.EventTypes);
+            await Connection.InsertOrReplaceWithChildrenAsync(evt);
         }
 
-        public void SaveEvent(EventHistory evt)
+        public Task SaveEventAsync(EventHistory evt)
         {
-            using (var conn = CreateConnection())
-            {
-                conn.Save(evt);
-            }
+            return Connection.InsertOrReplaceWithChildrenAsync(evt);
         }
     }
 }

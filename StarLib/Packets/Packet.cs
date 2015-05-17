@@ -49,6 +49,11 @@ namespace StarLib.Packets
 
         public bool IsReceive { get; set; }
 
+        /// <summary>
+        /// Specifies whether this packet should be compressed
+        /// </summary>
+        public virtual bool AlwaysCompress { get; set; }
+
 		public Direction Direction { get; set; }
 
         ///// <summary>

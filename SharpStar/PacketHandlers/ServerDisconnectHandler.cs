@@ -27,7 +27,7 @@ namespace SharpStar.PacketHandlers
 {
 	public class ServerDisconnectHandler : PacketHandler<ServerDisconnectPacket>
 	{
-		public override void Handle(ServerDisconnectPacket packet, StarConnection connection)
+		public override Task HandleAsync(ServerDisconnectPacket packet, StarConnection connection)
 		{
 			StarProxy proxy = connection.Proxy;
 
@@ -36,10 +36,13 @@ namespace SharpStar.PacketHandlers
 				if (proxy.Connected)
 					proxy.Close();
 			});
+
+            return Task.FromResult(false);
 		}
 
-		public override void HandleSent(ServerDisconnectPacket packet, StarConnection connection)
+		public override Task HandleSentAsync(ServerDisconnectPacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 	}
 }

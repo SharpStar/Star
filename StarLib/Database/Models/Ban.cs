@@ -19,13 +19,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ServiceStack.DataAnnotations;
+using SQLite.Net.Attributes;
+using SQLiteNetExtensions.Attributes;
 
 namespace StarLib.Database.Models
 {
     public class Ban
     {
-        [AutoIncrement]
+        [PrimaryKey, AutoIncrement]
         public int Id { get; set; }
 
         public string PlayerName { get; set; }
@@ -38,10 +39,10 @@ namespace StarLib.Database.Models
         
         public string Uuid { get; set; }
 
-        [Index(Unique = true)]
+        [Indexed(Unique = true)]
         public string IpAddress { get; set; }
 
-        [References(typeof(Account))]
-        public int? AccountId { get; set; }
+        [ForeignKey(typeof(Account))]
+        public int AccountId { get; set; }
     }
 }

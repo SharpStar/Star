@@ -30,14 +30,17 @@ namespace SharpStar.PacketHandlers
 {
 	public class HandshakeChallengeHandler : PacketHandler<HandshakeChallengePacket>
 	{
-		public override void Handle(HandshakeChallengePacket packet, StarConnection connection)
+		public override Task HandleAsync(HandshakeChallengePacket packet, StarConnection connection)
 		{
-			if (packet.IsReceive && Program.Configuration.EnableSharpAccounts)
+			if (packet.IsReceive && connection.Proxy.Player.AuthAttempted)
 				packet.Ignore = true;
+
+            return Task.FromResult(false);
 		}
 
-		public override void HandleSent(HandshakeChallengePacket packet, StarConnection connection)
+		public override Task HandleSentAsync(HandshakeChallengePacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 	}
 }

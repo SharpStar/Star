@@ -30,12 +30,14 @@ namespace SharpStar.PacketHandlers
 {
 	public class PlayerWarpResultHandler : PacketHandler<PlayerWarpResultPacket>
 	{
-		public override void Handle(PlayerWarpResultPacket packet, StarConnection connection)
+		public override Task HandleAsync(PlayerWarpResultPacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 
-		public override void HandleSent(PlayerWarpResultPacket packet, StarConnection connection)
+		public override Task HandleSentAsync(PlayerWarpResultPacket packet, StarConnection connection)
 		{
+            return Task.FromResult(false);
 		}
 	}
 }
