@@ -251,11 +251,9 @@ namespace StarLib.Server
             catch
             {
             }
-            finally
-            {
-                if (ServerRunning)
-                    await StartAccept();
-            }
+
+            if (ServerRunning)
+                await StartAccept();
         }
 
         protected async Task ProcessAccept(TcpClient client)
