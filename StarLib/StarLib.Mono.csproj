@@ -121,6 +121,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\ByteArraySegment.cs" />
     <Compile Include="Commands\Command.cs" />
     <Compile Include="Commands\CommandError.cs" />
     <Compile Include="Commands\CommandExecutorPart.cs" />
@@ -154,7 +155,6 @@
     <Compile Include="Database\Models\EventTypeHistory.cs" />
     <Compile Include="Database\Models\Group.cs" />
     <Compile Include="Database\Models\Permission.cs" />
-    <Compile Include="Database\Models\PermissionGroup.cs" />
     <Compile Include="Database\Mono\MonoSqliteDbFactory.cs" />
     <Compile Include="Database\Mono\MonoSQLiteProcessorFactory.cs" />
     <Compile Include="Database\SqliteAsyncDb.cs" />

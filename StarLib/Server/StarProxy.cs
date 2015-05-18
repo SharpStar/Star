@@ -206,9 +206,6 @@ namespace StarLib.Server
             }
 
             IsDisposed = true;
-
-            ClientConnection = null;
-            ServerConnection = null;
         }
 
         ~StarProxy()

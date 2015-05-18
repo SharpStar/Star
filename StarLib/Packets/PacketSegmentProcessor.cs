@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Ionic.Zlib;
+using StarLib.Collections;
 using StarLib.DataTypes;
 using StarLib.Networking;
 using StarLib.Utils;
@@ -38,20 +39,25 @@ namespace StarLib.Packets
 
         public byte[] CurrentPacketData { get; private set; }
 
+        private long? _length;
+        private int _position;
+
         /// <summary>
         /// Creates a <see cref="PacketSegmentProcessor"/> object
         /// </summary>
         public PacketSegmentProcessor()
         {
             PacketBuffer = new List<byte>();
+
+            _length = null;
         }
 
         /// <summary>
         /// Processes the next segment of data and gives the packet id and packet data (if any)
         /// </summary>
         /// <param name="nextSegment">The next segment to be processed</param>
-        /// <param name="offset"></param>
-        /// <param name="len"></param>
+        /// <param name="offset">The offset to start at</param>
+        /// <param name="len">The length of the segment to process</param>
         /// <returns>True if more needs to be processed, false if complete</returns>
         public bool ProcessNextSegment(byte[] nextSegment, int offset, int len)
         {
@@ -59,50 +65,47 @@ namespace StarLib.Packets
 
             if (nextSegment.Length > 0)
             {
-                PacketBuffer.AddRange(nextSegment.Skip(offset).Take(len));
+                PacketBuffer.AddRange(new ByteArraySegment(nextSegment, offset, len));
             }
 
             if (PacketBuffer.Count <= 1)
                 return false;
 
-            //packetId = reader.ReadByte();
             CurrentPacketId = PacketBuffer[0];
 
-            int pos;
-            long length;
-
-            try
+            bool compressed = _length.HasValue && _length.Value < 0;
+            if (!_length.HasValue)
             {
-                //length = reader.ReadSignedVLQ();
-                length = VLQ.FromEnumerableSigned(PacketBuffer, 1, PacketBuffer.Count, out pos); //the length of the packet
+                bool success;
+                _length = VLQ.FromEnumerableSigned(PacketBuffer, 1, PacketBuffer.Count, out _position, out success); //the length of the packet
+                _position++;
+
+                if (!success)
+                {
+                    _length = null;
+
+                    return false;
+                }
+
+                compressed = _length.Value < 0;
             }
-            catch //we don't have enough data yet! 
-            {
-                return false;
-            }
 
-            pos += 1;
+            int lenPos = Math.Abs((int)_length.Value);
 
-            bool compressed = length < 0;
-
-            if (compressed)
-                length = -length;
-
-            if (PacketBuffer.Count < length + pos)
+            if (PacketBuffer.Count < lenPos + _position)
                 return false;
 
-            byte[] data = PacketBuffer.Skip(pos).Take((int)length).ToArray();
-            //Buffer.BlockCopy(PacketBuffer, pos, data, 0, data.Length);
+            byte[] data = PacketBuffer.Skip(_position).Take(lenPos).ToArray();
 
-            pos += data.Length;
+            _position += data.Length;
 
-            if (compressed) //decompress this packet if it has been compressed
+            if (compressed) //decompress the packet if it has been compressed
             {
                 using (MemoryStream ms = new MemoryStream(data))
                 {
                     using (MemoryStream outStream = new MemoryStream())
                     {
-                        using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress, true))
+                        using (ZlibStream zs = new ZlibStream(ms, CompressionMode.Decompress))
                         {
                             zs.CopyTo(outStream);
                         }
@@ -110,14 +113,15 @@ namespace StarLib.Packets
                         data = outStream.ToArray();
                     }
                 }
-                //data = await ZLib.DecompressAsync(data);
-                //data = ZlibStream.UncompressBuffer(data);
             }
 
             CurrentPacketData = data;
 
             //remove the data already processed
-            PacketBuffer.RemoveRange(0, pos);
+            PacketBuffer.RemoveRange(0, _position);
+
+            //reset length
+            _length = null;
 
             //return true if there are any more packets needing to be processed
             return PacketBuffer.Count > 0;

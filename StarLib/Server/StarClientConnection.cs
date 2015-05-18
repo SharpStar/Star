@@ -26,37 +26,38 @@ using StarLib.Packets.Starbound;
 
 namespace StarLib.Server
 {
-	/// <summary>
-	/// A connection to a Starbound client
-	/// </summary>
-	public class StarClientConnection : StarConnection
-	{
-		public StarClientConnection(TcpClient client, Type[] packetTypes)
-			: base(packetTypes)
-		{
+    /// <summary>
+    /// A connection to a Starbound client
+    /// </summary>
+    public class StarClientConnection : StarConnection
+    {
+        public StarClientConnection(TcpClient client, Type[] packetTypes)
+            : base(packetTypes)
+        {
             ConnectionClient = client;
-		}
+        }
 
-		public override Direction Direction
-		{
-			get { return Direction.Client; }
-		}
+        public override Direction Direction
+        {
+            get { return Direction.Client; }
+        }
 
-		public override Task StartAsync()
-		{
-			return StartReceiveAsync();
-		}
+        public override Task StartAsync()
+        {
+            return StartReceiveAsync();
+        }
 
-		public override Task StopAsync()
-		{
+        public override Task StopAsync()
+        {
             return CloseAsync();
-		}
+        }
 
-		protected override async Task CloseAsync()
-		{
+        protected override async Task CloseAsync()
+        {
             try
             {
-                await Proxy.ServerConnection.SendPacketAsync(new ClientDisconnectRequestPacket());
+                if (Proxy.ServerConnection != null)
+                    await Proxy.ServerConnection.SendPacketAsync(new ClientDisconnectRequestPacket());
             }
             catch (Exception ex)
             {
@@ -64,6 +65,6 @@ namespace StarLib.Server
             }
 
             await base.CloseAsync();
-		}
-	}
+        }
+    }
 }

@@ -53,7 +53,21 @@ namespace SharpStar
 
         private static readonly Lazy<ConsoleCommand[]> _createConsoleCommands = new Lazy<ConsoleCommand[]>(CreateConsoleCommands);
         private static readonly Lazy<PlayerEventCommand[]> _createPlayerCommands = new Lazy<PlayerEventCommand[]>(CreatePlayerCommands);
-        private static readonly Lazy<IPacketHandler[]> _createPacketHandlers = new Lazy<IPacketHandler[]>(CreatePacketHandlers);
+
+        private static readonly Type[] _packetHandlerTypes =
+        {
+            typeof(ClientConnectHandler),
+            typeof(ServerDisconnectHandler),
+            typeof(ChatReceivePacketHandler),
+            typeof(HandshakeChallengeHandler),
+            typeof(HandshakeResponseHandler),
+            typeof(ConnectSuccessHandler),
+            typeof(ConnectFailureHandler),
+            typeof(PlayerWarpHandler),
+            typeof(ClientDisconnectRequestHandler),
+            typeof(ChatSendHandler),
+            typeof(PlayerWarpResultHandler)
+        };
 
         private static bool _shutdown;
 
@@ -75,11 +89,11 @@ namespace SharpStar
             }
         }
 
-        public static IPacketHandler[] HandlersToAdd
+        public static Type[] HandlersToAdd
         {
             get
             {
-                return _createPacketHandlers.Value;
+                return _packetHandlerTypes;
             }
         }
 
@@ -90,7 +104,7 @@ namespace SharpStar
                 return _createPlayerCommands.Value;
             }
         }
-        
+
         [HandleProcessCorruptedStateExceptions]
         static void Main(string[] args)
         {
@@ -276,26 +290,6 @@ namespace SharpStar
                 new WarpToWorldCommand(),
                 new BanHammerCommand(),
                 new MakeAdminCommand()
-            };
-        }
-
-        private static IPacketHandler[] CreatePacketHandlers()
-        {
-            return new IPacketHandler[]
-            {
-                new ClientConnectHandler(),
-                new ServerDisconnectHandler(),
-                new ChatReceivePacketHandler(),
-                new HandshakeChallengeHandler(),
-                new HandshakeResponseHandler(),
-                new ConnectSuccessHandler(),
-                new ConnectFailureHandler(),
-                new PlayerWarpHandler(),
-                new ClientDisconnectRequestHandler(),
-                new ChatSendHandler(),
-                new PlayerWarpResultHandler(),
-                //new CelestialRequestHandler(),
-                //new GiveItemHandler()
             };
         }
 

@@ -106,20 +106,14 @@ namespace StarLib.Networking
 		/// <returns>A VLQ</returns>
 		public ulong ReadVLQ()
 		{
+            bool succces;
 			int size;
-			return VLQ.FromFunc(_ => ReadByte(), ctr => true, out size);
-			//ulong value = 0L;
-			//while (true)
-			//{
-			//	byte tmp = ReadByte();
+			ulong result = VLQ.FromFunc(_ => ReadByte(), ctr => true, out size, out succces);
 
-			//	value = (value << 7) | (uint)(tmp & 0x7f);
+            if (!succces)
+                throw new Exception("Could not parse VLQ!");
 
-			//	if ((tmp & 0x80) == 0)
-			//		break;
-			//}
-
-			//return value;
+            return result;
 		}
 
 		/// <summary>

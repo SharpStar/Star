@@ -66,7 +66,11 @@ namespace StarLib.Starbound.BTree
 			using (StarReader reader = new StarReader(data))
 			{
 				int pos;
-				int len = (int)VLQ.FromBuffer(data, 0, data.Length, out pos);
+                bool success;
+				int len = (int)VLQ.FromBuffer(data, 0, data.Length, out pos, out success);
+
+                if (!success)
+                    return null;
 
 				reader.BaseStream.Seek(pos, SeekOrigin.Begin);
 

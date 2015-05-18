@@ -51,7 +51,7 @@ namespace StarLib.Database
             _migrator.MigrateUp();
         }
 
-        public  Task CreateTablesAsync()
+        public Task CreateTablesAsync()
         {
             var tasks = new List<Task>();
             tasks.Add(Connection.CreateTableAsync<Account>());
@@ -62,7 +62,6 @@ namespace StarLib.Database
             tasks.Add(Connection.CreateTableAsync<EventTypeHistory>());
             tasks.Add(Connection.CreateTableAsync<Group>());
             tasks.Add(Connection.CreateTableAsync<Permission>());
-            tasks.Add(Connection.CreateTableAsync<PermissionGroup>());
 
             return Task.WhenAll(tasks);
         }
@@ -261,7 +260,7 @@ namespace StarLib.Database
                     evt.EventTypes.Add(new EventType { Name = type });
                 }
             }
-            
+
             await Connection.InsertWithChildrenAsync(evt);
         }
 

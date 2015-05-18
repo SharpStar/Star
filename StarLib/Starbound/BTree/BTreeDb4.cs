@@ -84,7 +84,11 @@ namespace StarLib.Starbound.BTree
                 byte[] curKey = reader.Read(KeySize);
 
                 int pos;
-                int length = (int)VLQ.FromFunc(_ => reader.Read(1)[0], ctr => true, out pos);
+                bool success;
+                int length = (int)VLQ.FromFunc(_ => reader.Read(1)[0], ctr => true, out pos, out success);
+
+                if (!success)
+                    throw new Exception("Could not parse VLQ!");
 
                 byte[] value = reader.Read(length);
 

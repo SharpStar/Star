@@ -131,7 +131,8 @@ namespace SharpStar.Server
                         p.Current.Packet.Ignore = true;
                         p.Previous.Packet.Ignore = false;
 
-                        await p.Proxy.ClientConnection.SendPacketAsync(p.Previous.Packet);
+                        if (p.Proxy.ClientConnection != null)
+                            await p.Proxy.ClientConnection.SendPacketAsync(p.Previous.Packet);
                     }
                     else
                     {
@@ -190,7 +191,7 @@ namespace SharpStar.Server
                     watched.Dispose();
             };
 
-            ProxyHeartbeats.TryAdd(proxy, checker);
+            ProxyHeartbeats.AddOrUpdate(proxy, checker, (p, d) => p);
         }
 
     }

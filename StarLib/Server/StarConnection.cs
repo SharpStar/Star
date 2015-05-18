@@ -59,7 +59,7 @@ namespace StarLib.Server
 
         public TcpClient ConnectionClient { get; protected set; }
 
-        public ConcurrentDictionary<Type, List<IPacketHandler>> PacketHandlers
+        public Dictionary<Type, List<IPacketHandler>> PacketHandlers
         {
             get
             {
@@ -108,7 +108,7 @@ namespace StarLib.Server
 
         private TaskCompletionSource<bool> _completed;
 
-        private readonly ConcurrentDictionary<Type, List<IPacketHandler>> _packetHandlers;
+        private readonly Dictionary<Type, List<IPacketHandler>> _packetHandlers;
 
         private readonly CancellationTokenSource _cts;
 
@@ -117,7 +117,7 @@ namespace StarLib.Server
         protected StarConnection(Type[] packetTypes)
         {
             //_packetQueue = new BlockingCollection<Packet>(new ConcurrentQueue<Packet>());
-            _packetHandlers = new ConcurrentDictionary<Type, List<IPacketHandler>>();
+            _packetHandlers = new Dictionary<Type, List<IPacketHandler>>();
             _cts = new CancellationTokenSource();
             _readEventArgs = new SocketAsyncEventArgs();
             _connected = 0;
@@ -134,7 +134,7 @@ namespace StarLib.Server
             foreach (IPacketHandler handler in handlers)
             {
                 if (!PacketHandlers.ContainsKey(handler.Type))
-                    PacketHandlers.AddOrUpdate(handler.Type, new List<IPacketHandler>(new[] { handler }), (id, p) => p);
+                    PacketHandlers.Add(handler.Type, new List<IPacketHandler>(new[] { handler }));
                 else
                     PacketHandlers[handler.Type].Add(handler);
             }
@@ -167,7 +167,7 @@ namespace StarLib.Server
 
             ConnectionClient.Client.NoDelay = true;
 
-            byte[] buffer = new byte[1024];
+            byte[] buffer = new byte[65536];
             _readEventArgs.Completed += Operation_Completed;
             _readEventArgs.SetBuffer(buffer, 0, buffer.Length);
 
@@ -189,6 +189,7 @@ namespace StarLib.Server
                     await ProcessReceive(e);
                     break;
                 case SocketAsyncOperation.Send:
+
                     EventHandler<PacketEventArgs> packetSent = PacketSent;
                     if (packetSent != null)
                         packetSent(this, new PacketEventArgs(Proxy, e.UserToken as Packet));
@@ -220,7 +221,7 @@ namespace StarLib.Server
                 {
                     await Task.Factory.FromAsync(ConnectionClient.Client.BeginDisconnect(false, null, null), ConnectionClient.Client.EndDisconnect);
 
-                    if (ConnectionClient.Client.Poll(100000, SelectMode.SelectRead))
+                    if (ConnectionClient.Client.Poll(10000, SelectMode.SelectRead))
                     {
                         //Stopwatch sw = Stopwatch.StartNew();
 
@@ -290,22 +291,19 @@ namespace StarLib.Server
                         if (packetArgs != null)
                             packetArgs(this, new PacketEventArgs(Proxy, packet));
 
-#pragma warning disable 4014
-                        OtherConnection.SendPacketAsync(packet).ContinueWith(async p =>
-#pragma warning restore 4014
-                        {
-                            if (pHandlers != null)
-                            {
-                                foreach (IPacketHandler sentHandler in pHandlers)
-                                {
-                                    await sentHandler.HandleAfterAsync(packet, this);
-                                }
-                            }
+                        await OtherConnection.SendPacketAsync(packet);
 
-                            EventHandler<PacketEventArgs> aPacketArgs = AfterPacketReceived;
-                            if (aPacketArgs != null)
-                                aPacketArgs(this, new PacketEventArgs(Proxy, packet));
-                        }, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.NotOnFaulted);
+                        if (pHandlers != null)
+                        {
+                            foreach (IPacketHandler sentHandler in pHandlers)
+                            {
+                                await sentHandler.HandleAfterAsync(packet, this);
+                            }
+                        }
+
+                        EventHandler<PacketEventArgs> aPacketArgs = AfterPacketReceived;
+                        if (aPacketArgs != null)
+                            aPacketArgs(this, new PacketEventArgs(Proxy, packet));
 
                     }
                     catch (Exception ex)
@@ -372,7 +370,7 @@ namespace StarLib.Server
                     buffer = PacketSerializer.Serialize(packet);
                 }
 
-                bool compressed = buffer.Length >= 256 || packet.AlwaysCompress;
+                bool compressed = buffer.Length >= 8192 || packet.AlwaysCompress;
 
                 if (compressed)
                 {
@@ -387,28 +385,38 @@ namespace StarLib.Server
                     }
                 }
 
-                int length = compressed ? -buffer.Length : buffer.Length;
-
-                byte[] lenBuf = VLQ.CreateSigned(length);
-
-                byte[] finalBuffer = new byte[1 + lenBuf.Length + buffer.Length];
-                finalBuffer[0] = packet.PacketId;
-                Buffer.BlockCopy(lenBuf, 0, finalBuffer, 1, lenBuf.Length);
-                Buffer.BlockCopy(buffer, 0, finalBuffer, 1 + lenBuf.Length, buffer.Length);
-
                 if (ConnectionClient != null && ConnectionClient.Connected)
                 {
+                    int length = compressed ? -buffer.Length : buffer.Length;
+
+                    byte[] lenBuf = VLQ.CreateSigned(length);
+
+                    //byte[] finalBuffer = new byte[1 + lenBuf.Length + buffer.Length];
+                    //finalBuffer[0] = packet.PacketId;
+                    //Buffer.BlockCopy(lenBuf, 0, finalBuffer, 1, lenBuf.Length);
+                    //Buffer.BlockCopy(buffer, 0, finalBuffer, 1 + lenBuf.Length, buffer.Length);
+                    
                     SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                     args.RemoteEndPoint = RemoteEndPoint;
                     args.UserToken = packet;
-                    args.SetBuffer(finalBuffer, 0, finalBuffer.Length);
                     args.Completed += Operation_Completed;
 
-                    ConnectionClient.Client.SendAsync(args);
+                    var segments = new List<ArraySegment<byte>>
+                    {
+                        new ArraySegment<byte>(new[] { packet.PacketId }),
+                        new ArraySegment<byte>(lenBuf),
+                        new ArraySegment<byte>(buffer)
+                    };
+
+                    args.BufferList = segments;
+
+                    if (!ConnectionClient.Client.SendAsync(args))
+                        Operation_Completed(this, args);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                ex.LogError();
                 return CloseAsync();
             }
 

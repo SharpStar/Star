@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -41,7 +42,7 @@ namespace StarLib.Server
 
         private Type[] _packetTypes;
 
-        private readonly List<IPacketHandler> _packetHandlers;
+        private readonly Dictionary<Type, Func<IPacketHandler>> _packetHandlers;
 
         public StarProxyManager Proxies { get; private set; }
 
@@ -59,14 +60,11 @@ namespace StarLib.Server
 
         public IPEndPoint ServerEndPoint { get; private set; }
 
-        public List<IPacketHandler> PacketHandlers
+        public List<Type> PacketHandlers
         {
             get
             {
-                lock (_packetHandlers)
-                {
-                    return _packetHandlers.ToList();
-                }
+                return _packetHandlers.Keys.ToList();
             }
         }
 
@@ -80,7 +78,7 @@ namespace StarLib.Server
         /// <param name="config">The configuration for this <see cref="StarServer"/></param>
         /// <param name="connManager"></param>
         public StarServer(ServerConfiguration config, StarProxyManager connManager)
-            : this(config, connManager, new Type[0])
+            : this(config, connManager, Type.EmptyTypes)
         {
         }
 
@@ -91,7 +89,7 @@ namespace StarLib.Server
         /// <param name="proxyManager"></param>
         /// <param name="packetTypes">The packet types to be used by this server instance</param>
         public StarServer(ServerConfiguration config, StarProxyManager proxyManager, Type[] packetTypes)
-            : this(config, proxyManager, packetTypes, new IPacketHandler[0])
+            : this(config, proxyManager, packetTypes, Type.EmptyTypes)
         {
         }
 
@@ -101,8 +99,8 @@ namespace StarLib.Server
         /// <param name="config">The configuration for this <see cref="StarServer"/></param>
         /// <param name="proxyManager"></param>
         /// <param name="packetTypes">The packet types to be used by this server instance</param>
-        /// <param name="packetHandlers">The packet handlers to be used by this server instance</param>
-        public StarServer(ServerConfiguration config, StarProxyManager proxyManager, Type[] packetTypes, IEnumerable<IPacketHandler> packetHandlers)
+        /// <param name="packetHandlerTypes">The type of packet handlers to be used by this server instance</param>
+        public StarServer(ServerConfiguration config, StarProxyManager proxyManager, Type[] packetTypes, Type[] packetHandlerTypes)
         {
             AddPacketTypes(packetTypes);
 
@@ -125,8 +123,8 @@ namespace StarLib.Server
             LocalEndPoint = new IPEndPoint(bindAddress, ServerConfig.BindPort);
             ServerEndPoint = new IPEndPoint(serverAddress, ServerConfig.ServerBindPort);
 
-            _packetHandlers = new List<IPacketHandler>();
-            _packetHandlers.AddRange(packetHandlers.Distinct());
+            _packetHandlers = new Dictionary<Type, Func<IPacketHandler>>();
+            AddPacketHandlers(packetHandlerTypes);
 
             _serverRunning = 0;
         }
@@ -159,33 +157,32 @@ namespace StarLib.Server
         /// <summary>
         /// Registers a set of packet handlers to be used by new connections
         /// </summary>
-        /// <param name="handlers">The handlers to register</param>
-        public void AddPacketHandlers(IEnumerable<IPacketHandler> handlers)
+        /// <param name="handlerTypes">The type of handlers to register</param>
+        public void AddPacketHandlers(IEnumerable<Type> handlerTypes)
         {
-            var hList = handlers.ToList();
-
-            lock (_packetHandlers)
+            foreach (Type handlerType in handlerTypes)
             {
-                _packetHandlers.RemoveAll(hList.Contains);
-                _packetHandlers.AddRange(hList);
+                AddPacketHandler(handlerType);
             }
         }
 
-        public void AddPacketHandler(IPacketHandler handler)
+        public void AddPacketHandler(Type handlerType)
         {
-            AddPacketHandlers(new[] { handler });
+            if (!_packetHandlers.ContainsKey(handlerType))
+            {
+                var func = Expression.Lambda<Func<IPacketHandler>>(Expression.New(handlerType)).Compile();
+
+                _packetHandlers.Add(handlerType, func);
+            }
         }
 
         /// <summary>
         /// Removes a packet handler
         /// </summary>
-        /// <param name="handler"></param>
-        public void RemovePacketHandler(IPacketHandler handler)
+        /// <param name="handlerType"></param>
+        public void RemovePacketHandler(Type handlerType)
         {
-            lock (_packetHandlers)
-            {
-                _packetHandlers.Remove(handler);
-            }
+            _packetHandlers.Remove(handlerType);
         }
 
         /// <summary>
@@ -292,10 +289,8 @@ namespace StarLib.Server
 
             Interlocked.Increment(ref _numConnected);
             Interlocked.Increment(ref _totalJoined);
-
-#pragma warning disable 4014
-            Task.Run(async () =>
-#pragma warning restore 4014
+            
+            new Thread(async () =>
             {
                 try
                 {
@@ -304,10 +299,10 @@ namespace StarLib.Server
                     client.NoDelay = true;
 
                     StarClientConnection cl = new StarClientConnection(client, _packetTypes);
-                    cl.RegisterPacketHandlers(_packetHandlers);
+                    cl.RegisterPacketHandlers(_packetHandlers.Select(p => p.Value()));
 
                     StarServerConnection server = new StarServerConnection(_packetTypes);
-                    server.RegisterPacketHandlers(_packetHandlers);
+                    server.RegisterPacketHandlers(_packetHandlers.Select(p => p.Value()));
 
                     var starProxy = new StarProxy(this, cl, server);
                     starProxy.ConnectionClosed += (s, args) => Interlocked.Decrement(ref _numConnected);
@@ -320,7 +315,7 @@ namespace StarLib.Server
                 {
                     ex.LogError();
                 }
-            });
+            }).Start();
         }
     }
 }

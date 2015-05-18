@@ -69,7 +69,7 @@ namespace StarLib.DataTypes
             return Create((ulong)result);
         }
 
-		public static ulong FromFunc(Func<int, byte> read, Func<int, bool> condition, out int size)
+		public static ulong FromFunc(Func<int, byte> read, Func<int, bool> condition, out int size, out bool success)
 		{
 			int ctr = 0;
 			ulong value = 0L;
@@ -82,39 +82,50 @@ namespace StarLib.DataTypes
 				if ((tmp & 0x80) == 0)
 				{
 					size = ctr + 1;
+                    success = true;
 					return value;
 				}
 
 				ctr++;
 			}
 
-			throw new Exception("Error parsing VLQ");
+            size = 0;
+            success = false;
+
+            return 0;
 		}
 
-        public static ulong FromEnumerable(IEnumerable<byte> buffer, int offset, int count, out int size)
+        public static ulong FromEnumerable(IEnumerable<byte> buffer, int offset, int count, out int size, out bool success)
         {
             int ctr = 0;
             ulong value = 0L;
             foreach (byte b in buffer.Skip(offset).Take(count))
             {
-
                 value = (value << 7) | (uint)(b & 0x7f);
 
                 if ((b & 0x80) == 0)
                 {
                     size = ctr + 1;
+                    success = true;
+
                     return value;
                 }
 
                 ctr++;
             }
 
-            throw new Exception("Error parsing VLQ");
+            size = 0;
+            success = false;
+
+            return 0;
         }
 
-        public static long FromEnumerableSigned(IEnumerable<byte> buffer, int offset, int length, out int size)
+        public static long FromEnumerableSigned(IEnumerable<byte> buffer, int offset, int length, out int size, out bool success)
         {
-            ulong value = FromEnumerable(buffer, offset, length, out size);
+            ulong value = FromEnumerable(buffer, offset, length, out size, out success);
+
+            if (!success)
+                return 0;
 
             if ((value & 1) == 0x00)
                 return (long)value >> 1;
@@ -122,17 +133,24 @@ namespace StarLib.DataTypes
             return -((long)(value >> 1) + 1);
         }
 
-        public static ulong FromBuffer(byte[] buffer, int offset, int length, out int size)
+        public static ulong FromBuffer(byte[] buffer, int offset, int length, out int size, out bool success)
 		{
-			ulong value = FromFunc(ctr => buffer[ctr + offset], ctr => ctr + offset < length, out size);
+			ulong value = FromFunc(ctr => buffer[ctr + offset], ctr => ctr + offset < length, out size, out success);
+
+            if (!success)
+                return 0;
+
 			size += offset;
 
 			return value;
 		}
 
-		public static long FromBufferSigned(byte[] buffer, int offset, int length, out int size)
+		public static long FromBufferSigned(byte[] buffer, int offset, int length, out int size, out bool success)
 		{
-			ulong value = FromBuffer(buffer, offset, length, out size);
+			ulong value = FromBuffer(buffer, offset, length, out size, out success);
+
+            if (!success)
+                return 0;
 
 			if ((value & 1) == 0x00)
 				return (long)value >> 1;

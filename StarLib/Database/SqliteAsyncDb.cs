@@ -46,6 +46,11 @@ namespace StarLib.Database
 
 		public virtual SQLiteAsyncConnection CreateAsyncConnection()
 		{
+            string dir = Path.GetDirectoryName(FileName);
+
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
+
             var connStr = new SQLiteConnectionString(FileName, false);
 
             return new SQLiteAsyncConnection(() => new SQLiteConnectionWithLock(new SQLitePlatformGeneric(), connStr));
