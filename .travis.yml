@@ -1,5 +1,5 @@
 language: csharp
-solution: SharpStar.sln
+solution: SharpStar.Mono.sln
 mono:
 - latest
 addons:

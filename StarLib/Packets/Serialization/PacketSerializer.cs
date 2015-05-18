@@ -251,6 +251,10 @@ namespace StarLib.Packets.Serialization
                 {
                     expressions.Add(WriteMaybeType(member, dest));
                 }
+                else if (IsManualReadWrite(member))
+                {
+                    expressions.Add(WriteManual(member, dest));
+                }
                 //else if (IsEitherType(member))
                 //{
                 //	expressions.Add(WriteEitherType(member, dest));
@@ -333,6 +337,13 @@ namespace StarLib.Packets.Serialization
             );
 
             return newExpr;
+        }
+
+        static Expression WriteManual(MemberExpression member, Expression dest)
+        {
+            var write = typeof(ManualReaderWriter).GetMethod("Write", new[] { typeof(StarWriter) });
+
+            return Expression.Call(member, write, dest);
         }
 
         static BlockExpression WriteAnyType(MemberExpression member, Expression dest)
@@ -425,6 +436,10 @@ namespace StarLib.Packets.Serialization
                 {
                     expressions.Add(ReadMaybeType(member, stream, members[i].Item2));
                 }
+                else if (IsManualReadWrite(member))
+                {
+                    expressions.Add(ReadManual(member, stream));
+                }
                 //else if (IsEitherType(member))
                 //{
                 //	expressions.Add(ReadEitherType(member, stream, members[i].Item2));
@@ -455,6 +470,13 @@ namespace StarLib.Packets.Serialization
             );
 
             return newExpr;
+        }
+
+        static Expression ReadManual(MemberExpression member, Expression stream)
+        {
+            var read = typeof(ManualReaderWriter).GetMethod("Read", new[] { typeof(StarReader) });
+
+            return Expression.Call(member, read, stream);
         }
 
         //TODO: FIX ME
@@ -706,6 +728,11 @@ namespace StarLib.Packets.Serialization
         static bool IsConditional(MemberExpression member)
         {
             return Attribute.IsDefined(member.Member, typeof(StarSerializeCondition));
+        }
+
+        static bool IsManualReadWrite(MemberExpression member)
+        {
+            return typeof(ManualReaderWriter).IsAssignableFrom(member.Type);
         }
 
         static Expression WriteLengthIfNotGreedy(Expression stream, MemberExpression member, Expression length, int serializeLength)
