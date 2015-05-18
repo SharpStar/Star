@@ -178,6 +178,7 @@
     <Compile Include="Mono\DataConverter.cs" />
     <Compile Include="Packets\Either.cs" />
     <Compile Include="Packets\Maybe.cs" />
+    <Compile Include="Packets\Serialization\ManualReaderWriter.cs" />
     <Compile Include="Packets\Starbound\BurnContainerPacket.cs" />
     <Compile Include="Packets\Starbound\CallScriptedEntityPacket.cs" />
     <Compile Include="Packets\Starbound\CelestialRequestPacket.cs" />
