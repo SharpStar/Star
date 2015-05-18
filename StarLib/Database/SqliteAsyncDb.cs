@@ -20,6 +20,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using SQLite;
 using SQLite.Net;
 using SQLite.Net.Async;
@@ -29,14 +30,26 @@ namespace StarLib.Database
 {
 	public abstract class SqliteAsyncDb : IDisposable
 	{
-		public string FileName { get; private set; }
+        public const string DbDirectory = "databases";
+
+        public string FileName { get; private set; }
 
         public SQLiteAsyncConnection Connection { get; private set; }
 
-		protected SqliteAsyncDb(string fileName)
+        protected DbMigrator Migrator { get; private set; }
+
+        public abstract Task CreateTablesAsync();
+
+        protected SqliteAsyncDb(string fileName)
 		{
 			FileName = fileName;
+            Migrator = new DbMigrator(fileName);
             Init();
+        }
+
+        public virtual void Migrate()
+        {
+            Migrator.MigrateUp();
         }
 
         protected void Init()

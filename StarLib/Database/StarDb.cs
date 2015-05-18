@@ -30,28 +30,18 @@ namespace StarLib.Database
     public sealed class StarDb : SqliteAsyncDb
     {
         public const string StarDbFileName = "star.db";
-        public const string DbDirectory = "databases";
 
         private static readonly string AssemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         private static readonly string DbFileLocation = Path.Combine(AssemblyDir, DbDirectory, StarDbFileName);
-
-        private readonly DbMigrator _migrator;
-
+        
         public StarDb() : base(DbFileLocation)
         {
-            _migrator = new DbMigrator(StarDbFileName);
-
 #if !DEBUG
             Migrate();
 #endif
         }
 
-        public void Migrate()
-        {
-            _migrator.MigrateUp();
-        }
-
-        public Task CreateTablesAsync()
+        public override Task CreateTablesAsync()
         {
             var tasks = new List<Task>();
             tasks.Add(Connection.CreateTableAsync<Account>());
