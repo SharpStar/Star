@@ -59,12 +59,53 @@ namespace StarLib.Extensions
             return StripColorRegex.Replace(text, string.Empty);
         }
 
+        public static TimeSpan ToTimeSpan(this string time)
+        {
+            MatchCollection matches = ParseTimeRegex.Matches(time);
+            TimeSpan ts = TimeSpan.Zero;
+
+            foreach (Match match in matches)
+            {
+                if (!match.Success)
+                    continue;
+
+                int value;
+
+                if (!int.TryParse(match.Groups["value"].Value, out value))
+                    continue;
+
+                switch (match.Groups[1].Value)
+                {
+                    case "y":
+                        ts = ts.Add(TimeSpan.FromDays(value * 365.2425));
+                        break;
+                    case "mo":
+                        ts = ts.Add(TimeSpan.FromDays(value * 30.436875));
+                        break;
+                    case "d":
+                        ts = ts.Add(TimeSpan.FromDays(value));
+                        break;
+                    case "h":
+                        ts = ts.Add(TimeSpan.FromHours(value));
+                        break;
+                    case "m":
+                        ts = ts.Add(TimeSpan.FromMinutes(value));
+                        break;
+                    case "s":
+                        ts = ts.Add(TimeSpan.FromSeconds(value));
+                        break;
+                }
+            }
+
+            return ts;
+        }
+
         public static DateTime ToDateTime(this string time)
         {
             MatchCollection matches = ParseTimeRegex.Matches(time);
 
             DateTime now = DateTime.Now;
-            
+
             foreach (Match match in matches)
             {
                 if (!match.Success)

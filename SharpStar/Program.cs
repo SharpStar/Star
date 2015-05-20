@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -161,11 +162,25 @@ namespace SharpStar
 
                     if (input != null)
                     {
-                        if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
-                        {
-                            Shutdown(false);
+                        string[] ex = input.Split(' ');
 
-                            break;
+                        if (ex[0].Equals("exit", StringComparison.OrdinalIgnoreCase))
+                        {
+                            TimeSpan? ts = null;
+                            if (ex.Length == 2)
+                            {
+                                double time;
+
+                                if (double.TryParse(ex[1], out time))
+                                {
+                                    ts = TimeSpan.FromMinutes(time);
+                                }
+                            }
+
+                            Shutdown(false, ts);
+
+                            if (!ts.HasValue)
+                                break;
                         }
 
                         StarMain.Instance.ConsoleCommandManager.TryPassConsoleCommand(input);
@@ -188,9 +203,9 @@ namespace SharpStar
             scm.StartWatchingProxies();
         }
 
-        private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+        private static async void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
-            Shutdown();
+            await Shutdown();
         }
 
         private static Task SetupStar()
@@ -206,7 +221,7 @@ namespace SharpStar
 
         private static bool ConsoleCtrlCheck(CtrlTypes ctrlType)
         {
-            Shutdown(false);
+            Shutdown(false).Wait();
 
             return false;
         }
@@ -219,22 +234,79 @@ namespace SharpStar
                 new UnixSignal (Signum.SIGTERM)
             };
 
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 UnixSignal.WaitAny(signals, -1);
 
-                Shutdown();
+                await Shutdown();
             });
         }
 
-        public static void Shutdown(bool exit = true)
+        public static async Task Shutdown(bool exit = true, TimeSpan? wait = null)
         {
             if (_shutdown)
                 return;
 
-            _shutdown = true;
-
             StarMain.Instance.Server.AcceptingConnections = false;
+
+            if (wait.HasValue)
+            {
+                StarLog.DefaultLogger.Info("Shutting down in {0} minutes and {1} seconds.", wait.Value.Minutes, wait.Value.Seconds);
+
+                string message = StarMain.Instance.CurrentLocalization["ShutdownIn"];
+
+                DateTime end = DateTime.UtcNow.Add(wait.Value.Add(TimeSpan.FromMilliseconds(100)));
+
+                var tasks = new List<Task>();
+                if (!string.IsNullOrEmpty(message))
+                {
+                    foreach (var proxy in StarMain.Instance.Server.Proxies)
+                    {
+                        tasks.Add(Task.Run(async () =>
+                        {
+                            TimeSpan ts = TimeSpan.FromSeconds((int)(end - DateTime.UtcNow).TotalSeconds);
+                            while (ts >= TimeSpan.FromSeconds(1) && proxy.Connected)
+                            {
+                                TimeSpan delay;
+                                string timeLeft = string.Format("{0} minutes {1} seconds",
+                                    ts.Minutes, ts.Seconds);
+                                try
+                                {
+                                    await proxy.SendChatMessageAsync(StarMain.Instance.CurrentLocalization["ServerMessageName"],
+                                        string.Format(StarMain.Instance.CurrentLocalization["ShutdownIn"], timeLeft), 80);
+                                }
+                                catch
+                                {
+                                    break;
+                                }
+
+                                if (ts.Hours > 0)
+                                    delay = TimeSpan.FromHours((int)(ts.TotalHours / 8.0));
+                                else if (ts.Minutes > 0)
+                                    delay = TimeSpan.FromMinutes((int)(ts.TotalMinutes / 6.0));
+                                else if (ts.Seconds > 6)
+                                    delay = TimeSpan.FromSeconds((int)(ts.TotalSeconds / 2.0));
+                                else if (ts.Seconds <= 6)
+                                    delay = TimeSpan.FromSeconds(1);
+                                else
+                                    break;
+
+                                if (delay > TimeSpan.Zero)
+                                    await Task.Delay(delay);
+                                else
+                                    break;
+
+                                ts = ts.Subtract(delay);
+                            }
+                        }));
+                    }
+                }
+
+                await Task.Delay(wait.Value);
+                await Task.WhenAll(tasks);
+            }
+
+            _shutdown = true;
 
             Log.Info("Shutting down...");
 
@@ -248,14 +320,16 @@ namespace SharpStar
                 });
             }
 
+            Task killTask = null;
+            if (exit)
+                killTask = Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(p => Process.GetCurrentProcess().Kill());
+
             StarMain.Instance.Shutdown();
 
-            if (exit)
-            {
-                Log.Info("Shutdown complete!");
+            Log.Info("Shutdown complete!");
 
-                Process.GetCurrentProcess().Kill();
-            }
+            if (killTask != null)
+                await killTask;
         }
 
         private static void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
@@ -264,7 +338,7 @@ namespace SharpStar
             e.SetObserved();
         }
 
-        private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private static async void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
             ((Exception)e.ExceptionObject).LogError();
 
@@ -272,7 +346,7 @@ namespace SharpStar
             {
                 StarLog.DefaultLogger.Warn("Unhandled exception, cannot recover! Shutting down...");
 
-                Shutdown(false);
+                await Shutdown(false);
             }
         }
 

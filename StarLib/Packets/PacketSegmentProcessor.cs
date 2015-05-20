@@ -78,7 +78,7 @@ namespace StarLib.Packets
             {
                 bool success;
                 _length = VLQ.FromEnumerableSigned(PacketBuffer, 1, PacketBuffer.Count, out _position, out success); //the length of the packet
-                _position++;
+                _position++; //account for the packet id
 
                 if (!success)
                 {

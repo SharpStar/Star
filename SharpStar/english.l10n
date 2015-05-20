@@ -1,7 +1,9 @@
 ﻿#General
 
 WrongPasswordError=Wrong username or password!
+ServerMessageName=Star
 Shutdown=The server has shut down. We'll be back soon!
+ShutdownIn=The server will shut down in {0} for maintenance.
 
 #Console Commands
 

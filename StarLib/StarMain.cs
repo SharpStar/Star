@@ -33,6 +33,7 @@ using StarLib.Packets.Serialization;
 using StarLib.Packets.Starbound;
 using StarLib.Plugins;
 using StarLib.Plugins.CSharp;
+using StarLib.Scheduling;
 using StarLib.Server;
 using StarLib.Starbound;
 
@@ -81,6 +82,8 @@ namespace StarLib
 
         public ConsoleCommandManager ConsoleCommandManager { get; private set; }
 
+        public StarScheduler Scheduler { get; private set; }
+
         public LocalizationFile CurrentLocalization
         {
             get
@@ -115,6 +118,7 @@ namespace StarLib
             ConsoleCommandManager = new ConsoleCommandManager();
             ConnectionManager = new StarProxyManager();
             Configurations = new List<IConfiguration>();
+            Scheduler = new StarScheduler();
 
             _jsonSettings = new JsonSerializerSettings();
             ReadStarConfigs();
@@ -138,6 +142,8 @@ namespace StarLib
 
         public async Task Start()
         {
+            Scheduler.Start();
+
             InitPlugins();
 
             _log.Info("Loading database...");

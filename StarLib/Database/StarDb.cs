@@ -33,16 +33,17 @@ namespace StarLib.Database
 
         private static readonly string AssemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         private static readonly string DbFileLocation = Path.Combine(AssemblyDir, DbDirectory, StarDbFileName);
-        
+
         public StarDb() : base(DbFileLocation)
         {
-#if !DEBUG
-            Migrate();
-#endif
         }
 
         public override Task CreateTablesAsync()
         {
+#if !DEBUG
+            Migrate();
+#endif
+
             var tasks = new List<Task>();
             tasks.Add(Connection.CreateTableAsync<Account>());
             tasks.Add(Connection.CreateTableAsync<Ban>());

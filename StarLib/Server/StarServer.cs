@@ -296,7 +296,7 @@ namespace StarLib.Server
                 {
                     //client.Client.ReceiveBufferSize = 2048;
                     //client.Client.SendBufferSize = 2048;
-                    client.NoDelay = true;
+                    //client.NoDelay = true;
 
                     StarClientConnection cl = new StarClientConnection(client, _packetTypes);
                     cl.RegisterPacketHandlers(_packetHandlers.Select(p => p.Value()));

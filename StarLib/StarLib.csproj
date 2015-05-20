@@ -229,6 +229,11 @@
     <Compile Include="Packets\Starbound\TileUpdatePacket.cs" />
     <Compile Include="Packets\Starbound\UniverseTimeUpdatePacket.cs" />
     <Compile Include="Packets\Starbound\WorldClientStateUpdatePacket.cs" />
+    <Compile Include="Scheduling\IScheduler.cs" />
+    <Compile Include="Scheduling\ISchedulerJob.cs" />
+    <Compile Include="Scheduling\SchedulerJob.cs" />
+    <Compile Include="Scheduling\ScheduleType.cs" />
+    <Compile Include="Scheduling\StarScheduler.cs" />
     <Compile Include="Starbound\BTree\Block.cs" />
     <Compile Include="Starbound\BTree\BlockSignature.cs" />
     <Compile Include="Starbound\BTree\BTreeDb4.cs" />

@@ -19,14 +19,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using StarLib.Networking;
 
-namespace StarLib.Packets.Serialization
+namespace StarLib.Scheduling
 {
-    public abstract class ManualReaderWriter
+    public interface ISchedulerJob
     {
-        public abstract Task Read(StarReader reader);
-
-        public abstract Task Write(StarWriter writer);
+        void Execute();
     }
 }

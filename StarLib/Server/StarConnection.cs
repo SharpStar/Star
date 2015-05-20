@@ -33,7 +33,6 @@ using StarLib.Networking;
 using StarLib.Packets;
 using StarLib.Packets.Serialization;
 using StarLib.Utils;
-using Timer = System.Timers.Timer;
 
 namespace StarLib.Server
 {
@@ -101,8 +100,6 @@ namespace StarLib.Server
 
         #region Private
         private long _connected;
-
-        //private readonly BlockingCollection<Packet> _packetQueue;
 
         private SocketAsyncEventArgs _readEventArgs;
 
@@ -175,7 +172,7 @@ namespace StarLib.Server
 
             if (!ConnectionClient.Client.ReceiveAsync(_readEventArgs))
             {
-                await ProcessReceive(_readEventArgs);
+                await ProcessReceiveAsync(_readEventArgs);
             }
 
             await _completed.Task;
@@ -186,7 +183,7 @@ namespace StarLib.Server
             switch (e.LastOperation)
             {
                 case SocketAsyncOperation.Receive:
-                    await ProcessReceive(e);
+                    await ProcessReceiveAsync(e);
                     break;
                 case SocketAsyncOperation.Send:
 
@@ -259,7 +256,7 @@ namespace StarLib.Server
             }
         }
 
-        protected virtual async Task ProcessReceive(SocketAsyncEventArgs e)
+        protected virtual async Task ProcessReceiveAsync(SocketAsyncEventArgs e)
         {
             if (e.BytesTransferred > 0 && e.SocketError == SocketError.Success)
             {
@@ -314,7 +311,7 @@ namespace StarLib.Server
 
                 if (ConnectionClient != null && !ConnectionClient.Client.ReceiveAsync(e))
                 {
-                    await ProcessReceive(_readEventArgs);
+                    Operation_Completed(this, e);
                 }
             }
             else
@@ -391,24 +388,25 @@ namespace StarLib.Server
 
                     byte[] lenBuf = VLQ.CreateSigned(length);
 
-                    //byte[] finalBuffer = new byte[1 + lenBuf.Length + buffer.Length];
-                    //finalBuffer[0] = packet.PacketId;
-                    //Buffer.BlockCopy(lenBuf, 0, finalBuffer, 1, lenBuf.Length);
-                    //Buffer.BlockCopy(buffer, 0, finalBuffer, 1 + lenBuf.Length, buffer.Length);
-                    
+                    byte[] finalBuffer = new byte[1 + lenBuf.Length + buffer.Length];
+                    finalBuffer[0] = packet.PacketId;
+                    Buffer.BlockCopy(lenBuf, 0, finalBuffer, 1, lenBuf.Length);
+                    Buffer.BlockCopy(buffer, 0, finalBuffer, 1 + lenBuf.Length, buffer.Length);
+
                     SocketAsyncEventArgs args = new SocketAsyncEventArgs();
                     args.RemoteEndPoint = RemoteEndPoint;
                     args.UserToken = packet;
                     args.Completed += Operation_Completed;
+                    args.SetBuffer(finalBuffer, 0, finalBuffer.Length);
 
-                    var segments = new List<ArraySegment<byte>>
-                    {
-                        new ArraySegment<byte>(new[] { packet.PacketId }),
-                        new ArraySegment<byte>(lenBuf),
-                        new ArraySegment<byte>(buffer)
-                    };
+                    //var segments = new List<ArraySegment<byte>>
+                    //{
+                    //    new ArraySegment<byte>(new[] { packet.PacketId }),
+                    //    new ArraySegment<byte>(lenBuf),
+                    //    new ArraySegment<byte>(buffer)
+                    //};
 
-                    args.BufferList = segments;
+                    //args.BufferList = segments;
 
                     if (!ConnectionClient.Client.SendAsync(args))
                         Operation_Completed(this, args);
