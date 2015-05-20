@@ -27,5 +27,7 @@ namespace StarLib.Scheduling
         SchedulerJob ScheduleAsync(TimeSpan ts, ISchedulerJob toExecute, bool recurring);
 
         SchedulerJob ScheduleAsync(DateTime time, ISchedulerJob toExecute);
+
+        void RemoveJob(SchedulerJob job);
     }
 }

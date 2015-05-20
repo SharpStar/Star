@@ -173,6 +173,14 @@ namespace StarLib.Scheduling
             }
         }
 
+        public void RemoveJob(SchedulerJob job)
+        {
+            lock (_jobs)
+            {
+                _jobs.Remove(job);
+            }
+        }
+
         public void Dispose()
         {
             Dispose(true);

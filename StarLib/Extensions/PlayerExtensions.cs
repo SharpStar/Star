@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using StarLib.Database.Models;
 using StarLib.DataTypes;
 using StarLib.Misc;
 using StarLib.Packets;
@@ -99,10 +100,23 @@ namespace StarLib.Extensions
             });
         }
 
-        public static bool HasPermission(this Player player, string permission)
+        public static async Task<bool> HasPermissionsAsync(this Player player, params string[] permissions)
         {
-            return player.Account.Permissions.Any(p => p.Name == permission && p.Allowed);
-        }
+            if (player.Account == null)
+                return false;
 
+            bool hasGroupPerm = false;
+            if (player.Account.GroupId.HasValue)
+            {
+                Group group = await StarMain.Instance.Database.GetGroupAsync(player.Account.GroupId.Value);
+
+                if (group != null)
+                {
+                    hasGroupPerm = group.Permissions.Any(p => permissions.Any(x => p.Name.Equals(x, StringComparison.OrdinalIgnoreCase) && p.Allowed));
+                }
+            }
+
+            return hasGroupPerm || player.Account.Permissions.Any(p => permissions.Any(x => p.Name.Equals(x, StringComparison.OrdinalIgnoreCase) && p.Allowed));
+        }
     }
 }

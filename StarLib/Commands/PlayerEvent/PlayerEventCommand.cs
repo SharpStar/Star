@@ -24,47 +24,43 @@ using StarLib.Starbound;
 
 namespace StarLib.Commands.PlayerEvent
 {
-	public abstract class PlayerEventCommand : Command<ParsedPlayerEventCommand>
-	{
-		protected PlayerEventCommand(string commandName) : base(commandName, new PlayerEventCommandParts(commandName))
-		{
-		}
+    public abstract class PlayerEventCommand : Command<ParsedPlayerEventCommand>
+    {
+        protected PlayerEventCommand(string commandName) : base(commandName, new PlayerEventCommandParts(commandName))
+        {
+        }
 
-		public virtual bool PassPlayerEventCommand(string command, Player player)
-		{
-			string[] result;
-			var parsed = TryParseCommand(command, out result);
+        public virtual bool PassPlayerEventCommand(string command, Player player)
+        {
+            string[] result;
+            var parsed = TryParseCommand(command, out result);
 
-			if (result != null)
-			{
-				try
-				{
-					parsed.Executor(new ParsedPlayerEventCommand { Player = player, Arguments = result });
-				}
-				catch (PermissionDeniedException)
-				{
-					player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						StarMain.Instance.CurrentLocalization["PlayerCommandPermissionDenied"]);
-				}
-			}
+            if (result != null)
+            {
+                try
+                {
+                    parsed.Executor(new ParsedPlayerEventCommand { Player = player, Arguments = result });
+                }
+                catch (PermissionDeniedException)
+                {
+                    player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                        StarMain.Instance.CurrentLocalization["PlayerCommandPermissionDenied"]);
+                }
+            }
 
-			return result != null;
-		}
-	}
+            return result != null;
+        }
+    }
 
-	public static class PlayerEventCommandExtensions
-	{
-		public static Action<ParsedPlayerEventCommand> RequiresPermission(this Action<ParsedPlayerEventCommand> command, string permission)
-		{
-			return p =>
-			{
-				if (!p.Player.HasPermission(permission))
-				{
-					throw new PermissionDeniedException();
-				}
-
-				command(p);
-			};
-		}
-	}
+    public static class PlayerEventCommandExtensions
+    {
+        public static void RequiresPermissions(this ParsedPlayerEventCommand command, params string[] permissions)
+        {
+            if (command.Player.Account == null ||
+                !command.Player.Account.Permissions.Any(x => permissions.Any(z => z.Equals(x.Name, StringComparison.OrdinalIgnoreCase))))
+            {
+                throw new PermissionDeniedException();
+            }
+        }
+    }
 }
