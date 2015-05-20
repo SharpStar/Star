@@ -145,31 +145,39 @@ namespace StarLib.Scheduling
             });
         }
 
-        public virtual void ScheduleAsync(TimeSpan ts, ISchedulerJob toExecute, bool recurring)
+        public virtual SchedulerJob ScheduleAsync(TimeSpan ts, ISchedulerJob toExecute, bool recurring)
         {
             lock (_jobLocker)
             {
-                _jobs.Add(new SchedulerJob(toExecute, ts, recurring ? ScheduleType.Recurring : ScheduleType.Once, true));
+                var job = new SchedulerJob(toExecute, ts, recurring ? ScheduleType.Recurring : ScheduleType.Once, true);
+                _jobs.Add(job);
 
                 if (_semaphore.CurrentCount > 0)
                     _semaphore.Release();
+
+                return job;
             }
         }
 
-        public virtual void ScheduleAsync(DateTime time, ISchedulerJob toExecute)
+        public virtual SchedulerJob ScheduleAsync(DateTime time, ISchedulerJob toExecute)
         {
             lock (_jobLocker)
             {
-                _jobs.Add(new SchedulerJob(toExecute, time.ToUniversalTime(), ScheduleType.Once, true));
+                var job = new SchedulerJob(toExecute, time.ToUniversalTime(), ScheduleType.Once, true);
+                _jobs.Add(job);
 
                 if (_semaphore.CurrentCount > 0)
                     _semaphore.Release();
+
+                return job;
             }
         }
 
         public void Dispose()
         {
+            Dispose(true);
 
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -180,6 +188,11 @@ namespace StarLib.Scheduling
             }
 
             _semaphore = null;
+        }
+
+        ~StarScheduler()
+        {
+            Dispose(false);
         }
     }
 }

@@ -24,8 +24,8 @@ namespace StarLib.Scheduling
 {
     public interface IScheduler
     {
-        void ScheduleAsync(TimeSpan ts, ISchedulerJob toExecute, bool recurring);
+        SchedulerJob ScheduleAsync(TimeSpan ts, ISchedulerJob toExecute, bool recurring);
 
-        void ScheduleAsync(DateTime time, ISchedulerJob toExecute);
+        SchedulerJob ScheduleAsync(DateTime time, ISchedulerJob toExecute);
     }
 }
