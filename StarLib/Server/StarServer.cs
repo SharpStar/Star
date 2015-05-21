@@ -289,14 +289,14 @@ namespace StarLib.Server
 
             Interlocked.Increment(ref _numConnected);
             Interlocked.Increment(ref _totalJoined);
-            
+
             new Thread(async () =>
             {
                 try
                 {
                     //client.Client.ReceiveBufferSize = 2048;
                     //client.Client.SendBufferSize = 2048;
-                    //client.NoDelay = true;
+                    client.NoDelay = true;
 
                     StarClientConnection cl = new StarClientConnection(client, _packetTypes);
                     cl.RegisterPacketHandlers(_packetHandlers.Select(p => p.Value()));
@@ -309,7 +309,11 @@ namespace StarLib.Server
 
                     Proxies.AddProxy(starProxy.ConnectionId, starProxy);
 
+                    Thread.CurrentThread.Name = starProxy.ConnectionId;
+
                     await starProxy.StartAsync();
+
+                    StarLog.DefaultLogger.Debug("Client disconnected, exiting client thread {0}", Thread.CurrentThread.Name);
                 }
                 catch (Exception ex)
                 {
