@@ -119,11 +119,15 @@ namespace SharpStar
 
             try
             {
-                Run().Wait();
+                Run();
             }
             catch (Exception ex)
             {
                 ex.LogError();
+
+                Console.ReadLine();
+
+                return;
             }
 
             if (StarMain.Instance.ServerConfig.RunAsService)
@@ -192,12 +196,12 @@ namespace SharpStar
             }
         }
 
-        public static async Task Run()
+        public static void Run()
         {
             Log.Info("SharpStar Version {0}.{1}.{2}.{3}", SharpStarVersion.Major, SharpStarVersion.Minor, SharpStarVersion.Build, SharpStarVersion.Revision);
             Log.Info("Star Version {0}.{1}.{2}.{3}", StarVersion.Major, StarVersion.Minor, StarVersion.Build, StarVersion.Revision);
 
-            await SetupStar();
+            SetupStar();
 
             StarClientManager scm = new StarClientManager();
             scm.StartWatchingProxies();
@@ -208,7 +212,7 @@ namespace SharpStar
             await Shutdown();
         }
 
-        private static Task SetupStar()
+        private static void SetupStar()
         {
             StarMain.Instance.CurrentLocalization = new SimpleLocalizationFile("english.l10n");
             StarMain.Instance.Init();
@@ -216,7 +220,7 @@ namespace SharpStar
             StarMain.Instance.ConsoleCommandManager.AddCommands(ConsoleCommandsToAdd);
             StarMain.Instance.Server.AddPacketHandlers(HandlersToAdd);
 
-            return StarMain.Instance.Start();
+            StarMain.Instance.Start();
         }
 
         private static bool ConsoleCtrlCheck(CtrlTypes ctrlType)

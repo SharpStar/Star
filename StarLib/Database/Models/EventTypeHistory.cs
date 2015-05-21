@@ -19,16 +19,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SQLiteNetExtensions.Attributes;
 
 namespace StarLib.Database.Models
 {
     public class EventTypeHistory
     {
-        [ForeignKey(typeof(EventHistory))]
-        public int EventHistoryId { get; set; }
-
-        [ForeignKey(typeof(EventType))]
-        public int EventTypeId { get; set; }
+        public virtual int EventHistoryId { get; protected set; }
+        
+        public virtual int EventTypeId { get; set; }
     }
 }

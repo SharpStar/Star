@@ -140,15 +140,14 @@ namespace StarLib
             Server = new StarServer(ServerConfig, ConnectionManager, DefaultPacketTypes.ToArray());
         }
 
-        public async Task Start()
+        public void Start()
         {
             Scheduler.Start();
-
-            InitPlugins();
-
+            
             _log.Info("Loading database...");
             Database = new StarDb();
-            await Database.CreateTablesAsync();
+
+            InitPlugins();
 
             _log.Info("Loading plugins...");
             LoadPlugins();

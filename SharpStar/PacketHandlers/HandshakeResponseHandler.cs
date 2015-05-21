@@ -35,7 +35,7 @@ namespace SharpStar.PacketHandlers
 
             if (account != null)
             {
-                Ban acctBan = await StarMain.Instance.Database.GetBanByAccountAsync(account.Id);
+                Ban acctBan = StarMain.Instance.Database.GetBanByAccount(account.Id);
 
                 if (acctBan != null && acctBan.Active)
                 {
@@ -44,8 +44,8 @@ namespace SharpStar.PacketHandlers
                     {
                         acctBan.Active = false;
 
-                        await StarMain.Instance.Database.SaveBanAsync(acctBan);
-                        await StarMain.Instance.Database.AddEventAsync(
+                        StarMain.Instance.Database.SaveBan(acctBan);
+                        StarMain.Instance.Database.AddEvent(
                             string.Format("The ban for account {0} ({1}) has been lifted", account.Username, connection.Proxy.Player.Name),
                             new[] { "auto" });
                     }
@@ -57,7 +57,7 @@ namespace SharpStar.PacketHandlers
                             acctBan.ExpirationTime.ToString(StarMain.Instance.CurrentLocalization["BanMessageExpirationDateFormat"]))
                         });
 
-                        await StarMain.Instance.Database.AddEventAsync(
+                        StarMain.Instance.Database.AddEvent(
                             string.Format("Banned account {0} ({1}) attempted to join!", account.Username, connection.Proxy.Player.Name),
                             new[] { "bans" });
 
@@ -76,7 +76,7 @@ namespace SharpStar.PacketHandlers
                         Reason = StarMain.Instance.CurrentLocalization["WrongPasswordError"]
                     });
 
-                    await StarMain.Instance.Database.AddEventAsync(
+                    StarMain.Instance.Database.AddEvent(
                         string.Format("Player {0} ({1}) failed to login with the username {2}", connection.Proxy.Player.Name,
                         connection.Proxy.Player.Uuid.Id, connection.Proxy.Player.Account.Username), new[] { "auth" });
 
@@ -85,11 +85,11 @@ namespace SharpStar.PacketHandlers
                 else
                 {
                     //add the character to the databse and associate it with the account
-                    Character ch = await StarMain.Instance.Database.GetCharacterByUuidAsync(connection.Proxy.Player.Uuid.Id) ?? new Character();
+                    Character ch = StarMain.Instance.Database.GetCharacterByUuid(connection.Proxy.Player.Uuid.Id) ?? new Character();
 
-                    ch.AccountId = account.Id;
+                    ch.Account = account;
 
-                    await StarMain.Instance.Database.SaveCharacterAsync(ch);
+                    StarMain.Instance.Database.SaveCharacter(ch);
                 }
             }
             else if (!connection.Proxy.Player.AuthAttempted)

@@ -19,38 +19,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SQLite.Net.Attributes;
-using SQLiteNetExtensions.Attributes;
 
 namespace StarLib.Database.Models
 {
     public class Account
     {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public virtual int Id { get; protected set; }
 
-        public Guid InternalId { get; set; }
+        public virtual Guid InternalId { get; set; }
+        
+        public virtual string Username { get; set; }
 
-        [Indexed(Unique = true)]
-        public string Username { get; set; }
+        public virtual string PasswordHash { get; set; }
 
-        public string PasswordHash { get; set; }
+        public virtual string PasswordSalt { get; set; }
 
-        public string PasswordSalt { get; set; }
+        public virtual Group Group { get; set; }
 
-        [ForeignKey(typeof(Group))]
-        public int? GroupId { get; set; }
+        public virtual DateTime? LastLogin { get; set; }
 
-        public DateTime? LastLogin { get; set; }
+        public virtual bool IsAdmin { get; set; }
 
-        public bool IsAdmin { get; set; }
+        public virtual bool Banned { get; set; }
 
-        public bool Banned { get; set; }
-
-        [OneToMany]
-        public List<Permission> Permissions { get; set; }
-
-        [OneToMany(CascadeOperations = CascadeOperation.CascadeDelete)]
-        public List<Character> Characters { get; set; }
+        public virtual IList<Permission> Permissions { get; set; }
+        
+        public virtual IList<Character> Characters { get; set; }
     }
 }

@@ -106,9 +106,9 @@ namespace StarLib.Extensions
                 return false;
 
             bool hasGroupPerm = false;
-            if (player.Account.GroupId.HasValue)
+            if (player.Account.Group != null)
             {
-                Group group = await StarMain.Instance.Database.GetGroupAsync(player.Account.GroupId.Value);
+                Group group = player.Account.Group;
 
                 if (group != null)
                 {

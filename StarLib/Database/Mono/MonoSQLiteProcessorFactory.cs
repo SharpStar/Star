@@ -31,7 +31,7 @@ namespace StarLib.Database.Mono
     {
         public override IMigrationProcessor Create(string connectionString, IAnnouncer announcer, IMigrationProcessorOptions options)
         {
-            var factory = new MonoSqliteDbFactory();
+            var factory = new MonoSQLiteDbFactory();
             var connection = factory.CreateConnection(connectionString);
             return new SQLiteProcessor(connection, new SQLiteGenerator(), announcer, options, factory);
         }

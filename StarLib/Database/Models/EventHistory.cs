@@ -19,22 +19,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SQLite.Net.Attributes;
-using SQLiteNetExtensions.Attributes;
 
 namespace StarLib.Database.Models
 {
     public class EventHistory
     {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public virtual int Id { get; protected set; }
+        
+        public virtual Account Account { get; set; }
+        
+        public virtual IList<EventType> EventTypes { get; set; }
 
-        [ForeignKey(typeof(Account))]
-        public int AccountId { get; set; }
-
-        [ManyToMany(typeof(EventTypeHistory))]
-        public List<EventType> EventTypes { get; set; }
-
-        public string Text { get; set; }
+        public virtual string Text { get; set; }
     }
 }

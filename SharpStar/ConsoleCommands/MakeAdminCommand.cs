@@ -14,32 +14,32 @@ namespace SharpStar.ConsoleCommands
     {
         public MakeAdminCommand() : base(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandName"] ?? "makeadmin")
         {
-            Parts["{0} yes"] = async p =>
+            Parts["{0} yes"] = p =>
+           {
+               string username = p.Arguments[0];
+
+               Account account = StarMain.Instance.Database.GetAccountByUsername(username);
+
+               if (account == null)
+               {
+                   StarLog.DefaultLogger.Info(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandAccountNotExistError"]);
+
+                   return;
+               }
+
+               account.IsAdmin = true;
+
+               StarMain.Instance.Database.SaveAccount(account);
+
+               StarLog.DefaultLogger.Info(string.Format(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandSuccessMessageFormat"],
+                   account.Username, "yes"));
+           };
+
+            Parts["{0} no"] = p =>
             {
                 string username = p.Arguments[0];
 
-                Account account = await StarMain.Instance.Database.GetAccountByUsernameAsync(username);
-
-                if (account == null)
-                {
-                    StarLog.DefaultLogger.Info(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandAccountNotExistError"]);
-
-                    return;
-                }
-
-                account.IsAdmin = true;
-
-                await StarMain.Instance.Database.SaveAccountAsync(account);
-
-                StarLog.DefaultLogger.Info(string.Format(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandSuccessMessageFormat"],
-                    account.Username, "yes"));
-            };
-
-            Parts["{0} no"] = async p =>
-            {
-                string username = p.Arguments[0];
-
-                Account account = await StarMain.Instance.Database.GetAccountByUsernameAsync(username);
+                Account account = StarMain.Instance.Database.GetAccountByUsername(username);
 
                 if (account == null)
                 {
@@ -50,7 +50,7 @@ namespace SharpStar.ConsoleCommands
 
                 account.IsAdmin = false;
 
-                await StarMain.Instance.Database.SaveAccountAsync(account);
+                StarMain.Instance.Database.SaveAccount(account);
 
                 StarLog.DefaultLogger.Info(string.Format(StarMain.Instance.CurrentLocalization["MakeAdminConsoleCommandSuccessMessageFormat"],
                     account.Username, "no"));

@@ -19,30 +19,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SQLite.Net.Attributes;
-using SQLiteNetExtensions.Attributes;
 
 namespace StarLib.Database.Models
 {
     public class Ban
     {
-        [PrimaryKey, AutoIncrement]
-        public int Id { get; set; }
+        public virtual int Id { get; protected set; }
 
-        public string PlayerName { get; set; }
+        public virtual string PlayerName { get; set; }
 
-        public string Reason { get; set; }
+        public virtual string Reason { get; set; }
 
-        public bool Active { get; set; }
+        public virtual bool Active { get; set; }
 
-        public DateTime ExpirationTime { get; set; }
+        public virtual DateTime ExpirationTime { get; set; }
         
-        public string Uuid { get; set; }
-
-        [Indexed(Unique = true)]
-        public string IpAddress { get; set; }
-
-        [ForeignKey(typeof(Account))]
-        public int AccountId { get; set; }
+        public virtual string Uuid { get; set; }
+        
+        public virtual string IpAddress { get; set; }
+        
+        public virtual Account Account { get; set; }
     }
 }

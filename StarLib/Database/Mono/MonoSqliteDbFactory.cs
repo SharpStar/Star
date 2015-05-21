@@ -18,9 +18,10 @@ using FluentMigrator.Runner.Processors;
 
 namespace StarLib.Database.Mono
 {
-    public class MonoSqliteDbFactory : ReflectionBasedDbFactory
+    public class MonoSQLiteDbFactory : ReflectionBasedDbFactory
     {
-        public MonoSqliteDbFactory() : base("Mono.Data.Sqlite", "Mono.Data.Sqlite.SqliteFactory")
+        public MonoSQLiteDbFactory()
+            : base("Mono.Data.Sqlite", "Mono.Data.Sqlite.SqliteFactory")
         {
         }
     }

@@ -42,18 +42,18 @@ namespace SharpStar.PacketHandlers
             plr.Uuid = packet.Uuid;
 
             string uuid = plr.Uuid.Id;
-            Character ch = await StarMain.Instance.Database.GetCharacterByUuidAsync(uuid) ?? new Character();
+            Character ch = StarMain.Instance.Database.GetCharacterByUuid(uuid) ?? new Character();
 
             ch.Name = plr.Name;
             ch.Uuid = uuid;
             ch.LastIpAddress = connection.Proxy.ClientConnection.RemoteEndPoint.Address.ToString();
-            ch.AccountId = null;
+            ch.Account = null;
 
-            await StarMain.Instance.Database.SaveCharacterAsync(ch);
+            StarMain.Instance.Database.SaveCharacter(ch);
 
             if (!string.IsNullOrEmpty(packet.Account) && Program.Configuration.EnableSharpAccounts)
             {
-                Account account = await StarMain.Instance.Database.GetAccountByUsernameAsync(packet.Account);
+                Account account = StarMain.Instance.Database.GetAccountByUsername(packet.Account);
 
                 if (account == null)
                     return;
@@ -71,15 +71,15 @@ namespace SharpStar.PacketHandlers
             }
             else
             {
-                Ban ban = await StarMain.Instance.Database.GetBanByIpAsync(connection.Proxy.ClientConnection.RemoteEndPoint.Address.ToString());
+                Ban ban = StarMain.Instance.Database.GetBanByIp(connection.Proxy.ClientConnection.RemoteEndPoint.Address.ToString());
                 if (ban != null && ban.Active)
                 {
                     if (DateTime.Now > ban.ExpirationTime)
                     {
                         ban.Active = false;
 
-                        await StarMain.Instance.Database.SaveBanAsync(ban);
-                        await StarMain.Instance.Database.AddEventAsync(string.Format("The ban for uuid {0} ({1}) has been lifted", plr.Uuid.Id, plr.Name),
+                        StarMain.Instance.Database.SaveBan(ban);
+                        StarMain.Instance.Database.AddEvent(string.Format("The ban for uuid {0} ({1}) has been lifted", plr.Uuid.Id, plr.Name),
                             new[] { "auto" });
                     }
                     else
@@ -90,7 +90,7 @@ namespace SharpStar.PacketHandlers
                                 ban.ExpirationTime.ToString(StarMain.Instance.CurrentLocalization["BanMessageExpirationDateFormat"]))
                         });
 
-                        await StarMain.Instance.Database.AddEventAsync(string.Format("Banned uuid {0} ({1}) attempted to join!", plr.Uuid.Id, plr.Name),
+                        StarMain.Instance.Database.AddEvent(string.Format("Banned uuid {0} ({1}) attempted to join!", plr.Uuid.Id, plr.Name),
                             new[] { "bans" });
 
                         return;

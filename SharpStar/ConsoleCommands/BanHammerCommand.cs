@@ -34,11 +34,11 @@ namespace SharpStar.ConsoleCommands
     {
         public BanHammerCommand() : base(StarMain.Instance.CurrentLocalization["BanHammerCommandName"] ?? "starban")
         {
-            Parts["{0} {1}"] = async p =>
+            Parts["{0} {1}"] = p =>
             {
                 string uuid = p.Arguments[0];
                 string reason = p.Arguments[1];
-                Character ch = await StarMain.Instance.Database.GetCharacterByUuidAsync(uuid);
+                Character ch = StarMain.Instance.Database.GetCharacterByUuid(uuid);
 
                 if (ch == null)
                 {
@@ -57,16 +57,16 @@ namespace SharpStar.ConsoleCommands
                     proxy.Kick(reason);
                 }
 
-                await StarMain.Instance.Database.AddBanAsync(proxy != null ? proxy.Player.Name : string.Empty, ip, null, DateTime.MaxValue, reason);
+                StarMain.Instance.Database.AddBan(proxy != null ? proxy.Player.Name : string.Empty, ip, null, DateTime.MaxValue, reason);
 
             };
 
-            Parts["{0} {1} {2}"] = async p =>
+            Parts["{0} {1} {2}"] = p =>
              {
                  string uuid = p.Arguments[0];
                  string reason = p.Arguments[1];
                  string time = p.Arguments[2];
-                 Character ch = await StarMain.Instance.Database.GetCharacterByUuidAsync(uuid);
+                 Character ch = StarMain.Instance.Database.GetCharacterByUuid(uuid);
 
                  if (ch == null)
                  {
@@ -95,20 +95,20 @@ namespace SharpStar.ConsoleCommands
                  else
                      expirDate = time.ToDateTime();
 
-                 Ban existingBan = await StarMain.Instance.Database.GetBanByIpAsync(ip);
+                 Ban existingBan = StarMain.Instance.Database.GetBanByIp(ip);
 
                  if (existingBan != null)
                  {
                      existingBan.Active = true;
                      existingBan.ExpirationTime = expirDate;
 
-                     await StarMain.Instance.Database.SaveBanAsync(existingBan);
+                     StarMain.Instance.Database.SaveBan(existingBan);
 
                      StarLog.DefaultLogger.Info("Ban updated");
                  }
                  else
                  {
-                     await StarMain.Instance.Database.AddBanAsync(proxy != null ? proxy.Player.Name : string.Empty,
+                     StarMain.Instance.Database.AddBan(proxy != null ? proxy.Player.Name : string.Empty,
                          ip, account != null ? account.Id : (int?)null, expirDate, reason);
 
                      StarLog.DefaultLogger.Info("Ban added");
@@ -120,7 +120,7 @@ namespace SharpStar.ConsoleCommands
                  else
                      evtText = string.Format("Console banned {0}, reason: {1}", uuid, reason);
 
-                 await StarMain.Instance.Database.AddEventAsync(evtText, new[] { "console", "bans" });
+                 StarMain.Instance.Database.AddEvent(evtText, new[] { "console", "bans" });
              };
         }
 

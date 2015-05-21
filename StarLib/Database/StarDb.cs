@@ -21,13 +21,13 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using NHibernate.Linq;
 using StarLib.Database.Models;
 using StarLib.Security;
-using SQLiteNetExtensionsAsync.Extensions;
 
 namespace StarLib.Database
 {
-    public sealed class StarDb : SqliteAsyncDb
+    public sealed class StarDb : SqliteDb
     {
         public const string StarDbFileName = "star.db";
 
@@ -38,226 +38,324 @@ namespace StarLib.Database
         {
         }
 
-        public override Task CreateTablesAsync()
+        public Character GetCharacter(int id)
         {
-#if !DEBUG
-            Migrate();
-#endif
-
-            var tasks = new List<Task>();
-            tasks.Add(Connection.CreateTableAsync<Account>());
-            tasks.Add(Connection.CreateTableAsync<Ban>());
-            tasks.Add(Connection.CreateTableAsync<Character>());
-            tasks.Add(Connection.CreateTableAsync<EventHistory>());
-            tasks.Add(Connection.CreateTableAsync<EventType>());
-            tasks.Add(Connection.CreateTableAsync<EventTypeHistory>());
-            tasks.Add(Connection.CreateTableAsync<Group>());
-            tasks.Add(Connection.CreateTableAsync<Permission>());
-
-            return Task.WhenAll(tasks);
-        }
-
-        public Task<Character> GetCharacterAsync(int id)
-        {
-            return Connection.GetAsync<Character>(id);
-        }
-
-        public Task<Character> GetCharacterByUuidAsync(string uuid)
-        {
-            return Connection.Table<Character>().Where(p => p.Uuid == uuid).FirstOrDefaultAsync();
-        }
-
-        public Task SaveCharacterAsync(Character character)
-        {
-            return Connection.InsertOrReplaceAsync(character);
-        }
-
-        public async Task<bool> CreateAccountAsync(string username, string password, int? groupId = null)
-        {
-            if (await Connection.Table<Account>().Where(p => p.Username.ToUpper() == username.ToUpper()).CountAsync() > 0)
-                return false;
-
-            string salt = StarSecurity.GenerateSecureString();
-            string hash = StarSecurity.GenerateHash(username, password, Encoding.UTF8.GetBytes(salt));
-
-            Account account = new Account
+            using (var session = CreateSession())
             {
-                Username = username,
-                InternalId = Guid.NewGuid(),
-                PasswordSalt = salt,
-                PasswordHash = hash,
-                GroupId = groupId
-            };
+                return session.Get<Character>(id);
+            }
+        }
 
-            await Connection.InsertAsync(account);
+        public List<Character> GetAccountCharacters(int accountId)
+        {
+            using (var session = CreateSession())
+            {
+                return session.Query<Character>().Fetch(p => p.Account).Where(p => p.Account.Id == accountId).ToList();
+            }
+        }
+
+        public Character GetCharacterByUuid(string uuid)
+        {
+            using (var session = CreateSession())
+            {
+                return session.Query<Character>().SingleOrDefault(p => p.Uuid == uuid);
+            }
+        }
+
+        public void SaveCharacter(Character character)
+        {
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    session.SaveOrUpdate(character);
+
+                    transaction.Commit();
+                }
+            }
+        }
+
+        public bool CreateAccount(string username, string password, int? groupId = null)
+        {
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    if (session.Query<Account>().Count(p => p.Username.ToUpper() == username.ToUpper()) > 0)
+                        return false;
+
+                    string salt = StarSecurity.GenerateSecureString();
+                    string hash = StarSecurity.GenerateHash(username, password, Encoding.UTF8.GetBytes(salt));
+
+                    Account account = new Account
+                    {
+                        Username = username,
+                        InternalId = Guid.NewGuid(),
+                        PasswordSalt = salt,
+                        PasswordHash = hash,
+                        Group = groupId.HasValue ? session.Get<Group>(groupId.Value) : null
+                    };
+
+                    session.Save(account);
+
+                    transaction.Commit();
+                }
+            }
 
             return true;
         }
 
-        public Task<Account> GetAccountAsync(int id)
+        public Account GetAccount(int id)
         {
-            return Connection.GetWithChildrenAsync<Account>(id);
-        }
-
-        public Task<Account> GetAccountByUsernameAsync(string username)
-        {
-            return Connection.Table<Account>().Where(p => p.Username.ToUpper() == username.ToUpper()).FirstOrDefaultAsync();
-        }
-
-        public Task SaveAccountAsync(Account account)
-        {
-            return Connection.UpdateWithChildrenAsync(account);
-        }
-
-        public async Task<bool> AddBanAsync(string playerName, string playerIp, int? accountId, DateTime expirationTime, string reason = "")
-        {
-            if (accountId.HasValue && await Connection.Table<Account>().Where(p => p.Id == accountId).CountAsync() > 0)
-                return false;
-
-            if (await Connection.Table<Ban>().Where(p => p.IpAddress == playerIp).CountAsync() > 0)
-                return false;
-
-            await Connection.InsertAsync(new Ban
+            using (var session = CreateSession())
             {
-                PlayerName = playerName,
-                AccountId = accountId.HasValue ? accountId.Value : 0,
-                ExpirationTime = expirationTime,
-                Reason = reason,
-                IpAddress = playerIp,
-                Active = true
-            });
+                return session.Get<Account>(id);
+            }
+        }
+
+        public Account GetAccountByUsername(string username)
+        {
+            using (var session = CreateSession())
+            {
+                return session.Query<Account>().SingleOrDefault(p => p.Username.ToUpper() == username.ToUpper());
+            }
+        }
+
+        public void SaveAccount(Account account)
+        {
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    session.SaveOrUpdate(account);
+
+                    transaction.Commit();
+                }
+            }
+        }
+
+        public bool AddBan(string playerName, string playerIp, int? accountId, DateTime expirationTime, string reason = "")
+        {
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    if (accountId.HasValue && session.Query<Ban>().Fetch(p => p.Account).Any(p => p.Account.Id == accountId))
+                        return false;
+
+                    if (session.Query<Ban>().Count(p => p.IpAddress == playerIp) > 0)
+                        return false;
+
+                    Ban ban = new Ban
+                    {
+                        PlayerName = playerName,
+                        Account = accountId.HasValue ? session.Get<Account>(accountId.Value) : null,
+                        ExpirationTime = expirationTime,
+                        Reason = reason,
+                        IpAddress = playerIp,
+                        Active = true
+                    };
+
+                    session.Save(ban);
+                    transaction.Commit();
+                }
+            }
 
             return true;
         }
 
-        public Task SaveBanAsync(Ban ban)
+        public void SaveBan(Ban ban)
         {
-            return Connection.InsertOrReplaceAsync(ban);
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    session.SaveOrUpdate(ban);
+
+                    transaction.Commit();
+                }
+            }
         }
 
-        public async Task<bool> RemoveBanByAccountAsync(int accountId)
+        public bool RemoveBanByAccount(int accountId)
         {
-            Ban ban = await GetBanByAccountAsync(accountId);
+            Ban ban = GetBanByAccount(accountId);
 
             if (ban == null)
                 return false;
 
-            await Connection.DeleteAsync(ban);
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    session.Delete(ban);
+
+                    transaction.Commit();
+                }
+            }
 
             return true;
         }
 
-        public async Task<bool> RemoveBanByIpAsync(string ip)
+        public bool RemoveBanByIp(string ip)
         {
-            Ban ban = await GetBanByIpAsync(ip);
+            Ban ban = GetBanByIp(ip);
 
             if (ban == null)
                 return false;
 
-            await Connection.DeleteAsync(ban);
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    session.Delete(ban);
+
+                    transaction.Commit();
+                }
+            }
 
             return true;
         }
 
-        public Task<Ban> GetBanByAccountAsync(int accountId)
+        public Ban GetBanByAccount(int accountId)
         {
-            return Connection.Table<Ban>().Where(p => p.AccountId == accountId).FirstOrDefaultAsync();
-        }
-
-        public Task<Ban> GetBanByIpAsync(string ip)
-        {
-            return Connection.Table<Ban>().Where(p => p.IpAddress == ip).FirstOrDefaultAsync();
-        }
-
-        public async Task<bool> CreateGroupAsync(string name, bool isDefault = false)
-        {
-            if (await Connection.Table<Group>().Where(p => p.Name.ToUpper() == name.ToUpper()).CountAsync() > 0)
-                return false;
-
-            if (isDefault)
+            using (var session = CreateSession())
             {
-                var groups = await Connection.Table<Group>().Where(p => p.IsDefault).ToListAsync();
+                return session.Query<Ban>().Fetch(p => p.Account).SingleOrDefault(p => p.Account.Id == accountId);
+            }
+        }
 
-                foreach (Group group in groups)
+        public Ban GetBanByIp(string ip)
+        {
+            using (var session = CreateSession())
+            {
+                return session.Query<Ban>().SingleOrDefault(p => p.IpAddress == ip);
+            }
+        }
+
+        public bool CreateGroup(string name, bool isDefault = false)
+        {
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
                 {
-                    group.IsDefault = false;
+                    if (session.Query<Group>().Any(p => p.Name.ToUpper() == name.ToUpper()))
+                        return false;
 
-                    await Connection.UpdateAsync(group);
+                    //if (await Connection.Table<Group>().Where(p => p.Name.ToUpper() == name.ToUpper()).CountAsync() > 0)
+                    //    return false;
+
+                    if (isDefault)
+                    {
+                        var groups = session.Query<Group>().Where(p => p.IsDefault);
+
+                        foreach (Group group in groups)
+                        {
+                            group.IsDefault = false;
+
+                            session.Update(group);
+                        }
+                    }
+
+                    Group newGroup = new Group
+                    {
+                        Name = name,
+                        IsDefault = isDefault
+                    };
+
+                    session.Save(newGroup);
+
+                    transaction.Commit();
                 }
             }
-
-            await Connection.InsertAsync(new Group
-            {
-                Name = name,
-                IsDefault = isDefault
-            });
 
             return true;
         }
 
-        public Task<Group> GetGroupAsync(int id)
+        public Group GetGroup(int id)
         {
-            return Connection.GetAsync<Group>(id);
-        }
-
-        public Task<Group> GetGroupByNameAsync(string name)
-        {
-            return Connection.Table<Group>().Where(p => p.Name.ToUpper() == name.ToUpper()).FirstOrDefaultAsync();
-        }
-
-        public async Task<List<Group>> GetGroupsWithPermissionAsync(string permission)
-        {
-            var perms = await Connection.Table<Permission>().Where(p => p.Name.ToUpper() == permission.ToUpper()).ToListAsync();
-            var ids = perms.Select(p => p.GroupId);
-
-            var groups = new List<Group>();
-            foreach (int id in ids)
+            using (var session = CreateSession())
             {
-                Group g = await Connection.GetAsync<Group>(id);
-
-                if (g == null)
-                    continue;
-
-                groups.Add(g);
+                return session.Get<Group>(id);
             }
-
-            return groups;
         }
 
-        public Task SaveGroupAsync(Group group)
+        public Group GetGroupByName(string name)
         {
-            return Connection.InsertOrReplaceWithChildrenAsync(group);
+            using (var session = CreateSession())
+            {
+                return session.Query<Group>().SingleOrDefault(p => p.Name.ToUpper() == name.ToUpper());
+            }
         }
 
-        public async Task AddEventAsync(string text, string[] eventTypes, int? accountId = null)
+        public List<Group> GetGroupsWithPermission(string permission)
         {
-            EventHistory evt = new EventHistory
+            using (var session = CreateSession())
             {
-                Text = text,
-                AccountId = accountId.HasValue ? accountId.Value : 0,
-                EventTypes = new List<EventType>()
-            };
+                var perms = session.Query<Permission>().Fetch(p => p.Group).Where(p => p.Group != null && p.Name.ToUpper() == permission.ToUpper());
 
-            foreach (string type in eventTypes)
+                return perms.Select(p => p.Group).ToList();
+            }
+        }
+
+        public void SaveGroup(Group group)
+        {
+            using (var session = CreateSession())
             {
-                EventType evtType = await Connection.Table<EventType>().Where(p => p.Name.ToUpper() == type.ToUpper()).FirstOrDefaultAsync();
+                using (var transaction = session.BeginTransaction())
+                {
+                    session.SaveOrUpdate(group);
 
-                if (evtType != null)
-                {
-                    evt.EventTypes.Add(evtType);
-                }
-                else
-                {
-                    evt.EventTypes.Add(new EventType { Name = type });
+                    transaction.Commit();
                 }
             }
-
-            await Connection.InsertWithChildrenAsync(evt);
         }
 
-        public Task SaveEventAsync(EventHistory evt)
+        public void AddEvent(string text, string[] eventTypes, int? accountId = null)
         {
-            return Connection.InsertOrReplaceWithChildrenAsync(evt);
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    EventHistory evt = new EventHistory
+                    {
+                        Text = text,
+                        Account = accountId.HasValue ? session.Get<Account>(accountId.Value) : null,
+                        EventTypes = new List<EventType>()
+                    };
+
+                    foreach (string type in eventTypes)
+                    {
+                        EventType evtType = session.Query<EventType>().SingleOrDefault(p => p.Name.ToUpper() == type.ToUpper());
+
+                        if (evtType != null)
+                        {
+                            evt.EventTypes.Add(evtType);
+                        }
+                        else
+                        {
+                            evt.EventTypes.Add(new EventType { Name = type });
+                        }
+                    }
+
+                    session.Save(evt);
+
+                    transaction.Commit();
+                }
+            }
+        }
+
+        public void SaveEvent(EventHistory evt)
+        {
+            using (var session = CreateSession())
+            {
+                using (var transaction = session.BeginTransaction())
+                {
+                    session.SaveOrUpdate(evt);
+
+                    transaction.Commit();
+                }
+            }
         }
     }
 }

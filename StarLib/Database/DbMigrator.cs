@@ -24,52 +24,63 @@ using FluentMigrator;
 using FluentMigrator.Runner;
 using FluentMigrator.Runner.Announcers;
 using FluentMigrator.Runner.Initialization;
+using FluentMigrator.Runner.Processors;
 using StarLib.Database.Mono;
+using StarLib.Logging;
+using StarLib.Mono;
 
 namespace StarLib.Database
 {
-	public class DbMigrator
-	{
-		private class MigrationOptions : IMigrationProcessorOptions
-		{
-			public bool PreviewOnly { get; set; }
-			public int Timeout { get; set; }
-			public string ProviderSwitches { get; set; }
-		}
+    public class DbMigrator
+    {
+        class MigrationOptions : IMigrationProcessorOptions
+        {
+            public bool PreviewOnly { get; set; }
+            public string ProviderSwitches { get; set; }
+            public int Timeout { get; set; }
+        }
 
-		public string DatabaseFile { get; set; }
+        public string DatabaseFile { get; set; }
 
-		public DbMigrator(string dbFile)
-		{
-			if (dbFile == null)
-				throw new ArgumentNullException("dbFile");
+        public DbMigrator(string dbFile)
+        {
+            if (dbFile == null)
+                throw new ArgumentNullException("dbFile");
 
-			DatabaseFile = dbFile;
-		}
+            DatabaseFile = dbFile;
+        }
 
-		public virtual MigrationRunner GetRunner()
-		{
-			string connString = string.Format("Data Source={0}", DatabaseFile);
+        protected virtual MigrationRunner GetRunner()
+        {
+            string connString = string.Format("Data Source={0}", DatabaseFile);
 
-			var options = new MigrationOptions { PreviewOnly = false, Timeout = 0 };
-			//var factory = new FluentMigrator.Runner.Processors.SQLite.SQLiteProcessorFactory();
-			var factory = new MonoSQLiteProcessorFactory();
-			var assembly = Assembly.GetExecutingAssembly();
-			
-			var announcer = new NullAnnouncer();
-			var migrationContext = new RunnerContext(announcer);
-			var processor = factory.Create(connString, announcer, options);
-			var runner = new MigrationRunner(assembly, migrationContext, processor);
+            var options = new MigrationOptions { PreviewOnly = false, Timeout = 0 };
+            //var factory = new FluentMigrator.Runner.Processors.SQLite.SQLiteProcessorFactory();
+            var factory = new MonoSQLiteProcessorFactory();
+            var assembly = Assembly.GetExecutingAssembly();
 
-			return runner;
-		}
+            var announcer = new NullAnnouncer();
+            var migrationContext = new RunnerContext(announcer);
+            var processor = factory.Create(connString, announcer, options);
+            var runner = new MigrationRunner(assembly, migrationContext, processor);
 
-		public void MigrateUp()
-		{
-			var runner = GetRunner();
+            return runner;
+        }
 
-			runner.MigrateUp(true);
-			runner.Processor.Dispose();
-		}
-	}
+        public virtual void Migrate()
+        {
+            var runner = GetRunner();
+
+            runner.MigrateUp(true);
+            runner.Processor.Dispose();
+        }
+
+        public void MigrateUp()
+        {
+            var runner = GetRunner();
+
+            runner.MigrateUp(true);
+            runner.Processor.Dispose();
+        }
+    }
 }
