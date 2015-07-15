@@ -20,6 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using StarLib.Extensions;
 using StarLib.Logging;
 using StarLib.Packets;
 using StarLib.Starbound;
@@ -128,15 +129,10 @@ namespace StarLib.Server
             Player = new Player { Proxy = this };
         }
 
-        public void Start()
-        {
-            StartAsync();
-        }
-
         /// <summary>
         /// Starts the connnections
         /// </summary>
-        public Task StartAsync()
+        public void Start()
         {
             if (Running)
                 throw new InvalidOperationException("This proxy is already running!");
@@ -144,16 +140,19 @@ namespace StarLib.Server
             Interlocked.CompareExchange(ref _running, 1, 0);
 
             ConnectionTime = DateTime.Now;
-            Task serverTask = ServerConnection.StartAsync();
-            Task clientTask = ClientConnection.StartAsync();
+            
+            try
+            {
+                Task sTask = ServerConnection.StartAsync();
+                Task cTask = ClientConnection.StartAsync();
 
-            return Task.WhenAll(serverTask, clientTask);
-            //return Task.FromResult(true);
-        }
-
-        public void Close()
-        {
-            CloseAsync().Wait();
+                Task.WaitAll(sTask, cTask);
+            }
+            catch (Exception ex)
+            {
+                ex.LogError();
+                Task.WaitAll(CloseAsync());
+            }
         }
 
         /// <summary>
@@ -196,7 +195,7 @@ namespace StarLib.Server
         {
             if (disposing)
             {
-                Close();
+                CloseAsync().Wait();
 
                 if (ClientConnection != null)
                     ClientConnection.Dispose();

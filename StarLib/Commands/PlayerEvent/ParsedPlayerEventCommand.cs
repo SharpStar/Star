@@ -25,6 +25,5 @@ namespace StarLib.Commands.PlayerEvent
 {
     public class ParsedPlayerEventCommand : ParsedCommand
     {
-        public Player Player { get; set; }
     }
 }

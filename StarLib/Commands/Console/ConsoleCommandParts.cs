@@ -24,6 +24,10 @@ namespace StarLib.Commands.Console
 {
     public class ConsoleCommandParts : CommandParts<ParsedCommand>
     {
+        public ConsoleCommandParts()
+        {
+        }
+
         public ConsoleCommandParts(string commandName)
             : base(commandName)
         {

@@ -19,21 +19,21 @@ using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-    public class WorldClientStateUpdatePacket : Packet
-    {
-        public override byte PacketId
-        {
-            get
-            {
-                return (byte)PacketType.WorldClientStateUpdate;
-            }
-            protected set
-            {
-                throw new NotImplementedException();
-            }
-        }
+    //public class WorldClientStateUpdatePacket : Packet
+    //{
+    //    public override byte PacketId
+    //    {
+    //        get
+    //        {
+    //            return (byte)PacketType.WorldClientStateUpdate;
+    //        }
+    //        protected set
+    //        {
+    //            throw new NotImplementedException();
+    //        }
+    //    }
 
-        [StarSerialize(0)]
-        public byte[] Delta { get; set; }
-    }
+    //    [StarSerialize(0)]
+    //    public byte[] Delta { get; set; }
+    //}
 }

@@ -33,7 +33,7 @@ namespace SharpStar.PlayerCommands
         {
             Parts["{0}"] = p =>
             {
-                Player fromPlr = p.Player;
+                Player fromPlr = Context.Player;
                 var toProxies = StarMain.Instance.Server.Proxies.Where(x => x.Player != null &&
                                 x.Player.NameWithoutColor.Equals(p.Arguments[0], StringComparison.OrdinalIgnoreCase)).OrderByDescending(x => x.ConnectionTime)
                                 .ToList();
@@ -57,12 +57,12 @@ namespace SharpStar.PlayerCommands
                 {
                     fromPlr.WarpToPlayer(toProxies.First().Player);
 
-                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    fromPlr.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies.First().Player.Name));
                 }
                 else
                 {
-                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    fromPlr.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandNotFoundMessage"], p.Arguments[0]));
                 }
             };
@@ -72,7 +72,7 @@ namespace SharpStar.PlayerCommands
                 int selection;
                 if (!int.TryParse(p.Arguments[1], out selection))
                 {
-                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    Context.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupInvalidSel"]);
 
                     return;
@@ -80,14 +80,14 @@ namespace SharpStar.PlayerCommands
 
                 selection--;
 
-                Player fromPlr = p.Player;
+                Player fromPlr = Context.Player;
                 var toProxies = StarMain.Instance.Server.Proxies.Where(x => x.Player != null &&
                                 x.Player.NameWithoutColor.Equals(p.Arguments[0], StringComparison.OrdinalIgnoreCase)).OrderByDescending(x => x.ConnectionTime)
                                 .ToList();
 
                 if (toProxies.Count < selection)
                 {
-                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    fromPlr.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandDupInvalidSel"]);
 
                     return;
@@ -95,7 +95,7 @@ namespace SharpStar.PlayerCommands
 
                 fromPlr.WarpToPlayer(toProxies[selection].Player);
 
-                p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                fromPlr.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         string.Format(StarMain.Instance.CurrentLocalization["PlayerWarpToPlayerCommandSuccessMessage"], toProxies[selection].Player.Name));
             };
         }

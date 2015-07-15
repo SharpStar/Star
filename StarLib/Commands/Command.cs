@@ -20,36 +20,68 @@ using System.Linq;
 
 namespace StarLib.Commands
 {
-	public abstract class Command : Command<ParsedCommand>
-	{
-		protected Command(string commandName, CommandParts<ParsedCommand> parts) : base(commandName, parts)
-		{
-		}
-	}
+    public abstract class Command : Command<ParsedCommand, CommandContext>
+    {
+        protected Command(string commandName, CommandParts<ParsedCommand> parts, CommandContext context) : base(commandName, parts, context)
+        {
+        }
+    }
 
-    public abstract class Command<TParts> where TParts : ParsedCommand
+    public abstract class Command<TParts, TContext> : ICommand where TParts : ParsedCommand, new() where TContext : CommandContext
     {
 
         protected CommandParts<TParts> Parts { get; private set; }
 
-        public abstract string Description { get; }
+        public TContext Context { get; internal set; }
+
+        public virtual string Description { get; protected set; }
 
         public string CommandName { get; protected set; }
 
-        protected Command(string commandName, CommandParts<TParts> parts)
+        protected Command(string commandName) : this(commandName, new CommandParts<TParts>(commandName), null)
         {
-            CommandName = commandName;
+        }
+
+        protected Command(string commandName, CommandParts<TParts> parts, TContext context) : this(commandName, context)
+        {
             Parts = parts;
         }
 
-        public abstract string GetHelp(string[] arguments);
+        protected Command(string commandName, TContext context)
+        {
+            CommandName = commandName;
+            Context = context;
+        }
 
-        protected CommandExecutorPart<TParts> TryParseCommand(string command, out string[] result)
+        protected virtual CommandParts<TParts> CreateCommandParts()
+        {
+            return new CommandParts<TParts>(CommandName);
+        }
+
+        public virtual string GetHelp(string[] arguments)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool PassCommand(string command)
+        {
+            string[] result;
+            var parsed = TryParseCommand(command, out result);
+
+            if (result != null)
+            {
+                parsed.Executor(new TParts { Arguments = result });
+            }
+
+            return result != null;
+        }
+
+        public virtual CommandExecutorPart<TParts> TryParseCommand(string command, out string[] result)
         {
             string[] r = null;
             CommandPart errorPart = null;
-			CommandError error = CommandError.Success;
-
+            CommandError error = CommandError.Success;
+            
             foreach (CommandExecutorPart<TParts> part in Parts)
             {
                 error = part.Part.TryParse(command, out result);

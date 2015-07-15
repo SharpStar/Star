@@ -20,6 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StarLib;
+using StarLib.Commands;
 using StarLib.Commands.PlayerEvent;
 using StarLib.Logging;
 using StarLib.Packets;
@@ -29,45 +30,38 @@ using StarLib.Server;
 
 namespace SharpStar.PacketHandlers
 {
-	public class ChatSendHandler : PacketHandler<ChatSendPacket>
-	{
-		public override Task HandleAsync(ChatSendPacket packet, StarConnection connection)
-		{
-			if (packet.Text.StartsWith("/"))
-			{
-				string command = packet.Text.Substring(1);
-                
-				bool found = false;
+    public class ChatSendHandler : PacketHandler<ChatSendPacket>
+    {
+        public override Task HandleAsync(ChatSendPacket packet, StarConnection connection)
+        {
+            if (packet.Text.StartsWith("/"))
+            {
+                string command = packet.Text.Substring(1);
 
-				foreach (PlayerEventCommand cmd in Program.PlayerCommands)
-				{
-					if (cmd.PassPlayerEventCommand(command, connection.Proxy.Player))
-						found = true;
-				}
+                //Star command found, we're done here.
+                if (Program.PlayerCommandManager.PassCommand(command, new PlayerCommandContext(connection.Proxy.Player)))
+                {
+                    packet.Ignore = true;
 
-				//Star command found, we're done here.
-				if (found)
-				{
-					packet.Ignore = true;
+                    return Task.FromResult(false);
+                }
 
-					return Task.FromResult(false);
-				}
+                bool found = false;
+                foreach (IPluginManager pm in StarMain.Instance.PluginManagers)
+                {
+                    if (pm.PassCommand(command, connection.Proxy.Player))
+                        found = true;
+                }
 
-				foreach (IPluginManager pm in StarMain.Instance.PluginManagers)
-				{
-					if (pm.PassCommand(command, connection.Proxy.Player))
-						found = true;
-				}
-
-				packet.Ignore = found;
-			}
+                packet.Ignore = found;
+            }
 
             return Task.FromResult(false);
-		}
+        }
 
-		public override Task HandleSentAsync(ChatSendPacket packet, StarConnection connection)
-		{
+        public override Task HandleSentAsync(ChatSendPacket packet, StarConnection connection)
+        {
             return Task.FromResult(false);
-		}
-	}
+        }
+    }
 }

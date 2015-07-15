@@ -24,6 +24,5 @@ namespace StarLib.Commands
 {
     public interface ICommand
     {
-        CommandExecutorPart TryParseCommand(string command, out bool success);
     }
 }

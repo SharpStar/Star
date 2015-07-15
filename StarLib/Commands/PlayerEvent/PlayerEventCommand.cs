@@ -24,13 +24,18 @@ using StarLib.Starbound;
 
 namespace StarLib.Commands.PlayerEvent
 {
-    public abstract class PlayerEventCommand : Command<ParsedPlayerEventCommand>
+    public class PlayerEventCommand : Command<ParsedPlayerEventCommand, PlayerCommandContext>
     {
-        protected PlayerEventCommand(string commandName) : base(commandName, new PlayerEventCommandParts(commandName))
+        protected PlayerEventCommand(string commandName) : base(commandName, new PlayerEventCommandParts(commandName), null)
         {
         }
 
-        public virtual bool PassPlayerEventCommand(string command, Player player)
+        protected PlayerEventCommand(string commandName, PlayerCommandContext context) : base(commandName, new PlayerEventCommandParts(commandName),
+            context)
+        {
+        }
+
+        public override bool PassCommand(string command)
         {
             string[] result;
             var parsed = TryParseCommand(command, out result);
@@ -39,25 +44,33 @@ namespace StarLib.Commands.PlayerEvent
             {
                 try
                 {
-                    parsed.Executor(new ParsedPlayerEventCommand { Player = player, Arguments = result });
+                    parsed.Executor(new ParsedPlayerEventCommand { Arguments = result });
                 }
                 catch (PermissionDeniedException)
                 {
-                    player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-                        StarMain.Instance.CurrentLocalization["PlayerCommandPermissionDenied"]);
+                    if (Context.Player.Proxy.Running)
+                        Context.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                            StarMain.Instance.CurrentLocalization["PlayerCommandPermissionDenied"]);
                 }
             }
 
             return result != null;
         }
+
+        public override string Description { get; protected set; }
+
+        public override string GetHelp(string[] arguments)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public static class PlayerEventCommandExtensions
     {
-        public static void RequiresPermissions(this ParsedPlayerEventCommand command, params string[] permissions)
+        public static void RequiresPermissions(this PlayerEventCommand command, params string[] permissions)
         {
-            if (command.Player.Account == null ||
-                !command.Player.Account.Permissions.Any(x => permissions.Any(z => z.Equals(x.Name, StringComparison.OrdinalIgnoreCase))))
+            if (command.Context.Player.Account == null ||
+                !command.Context.Player.Account.Permissions.Any(x => permissions.Any(z => z.Equals(x.Name, StringComparison.OrdinalIgnoreCase))))
             {
                 throw new PermissionDeniedException();
             }

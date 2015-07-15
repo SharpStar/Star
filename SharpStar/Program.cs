@@ -21,7 +21,6 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.ServiceProcess;
-using System.Threading;
 using System.Threading.Tasks;
 using log4net.Config;
 using Mono.Unix;
@@ -34,6 +33,7 @@ using SharpStar.PacketHandlers;
 using SharpStar.PlayerCommands;
 using SharpStar.Server;
 using StarLib;
+using StarLib.Collections;
 using StarLib.Commands.Console;
 using StarLib.Commands.PlayerEvent;
 using StarLib.Configuration;
@@ -51,10 +51,7 @@ namespace SharpStar
 
         private static readonly Version SharpStarVersion = Assembly.GetExecutingAssembly().GetName().Version;
         private static readonly Version StarVersion = typeof(StarMain).Assembly.GetName().Version;
-
-        private static readonly Lazy<ConsoleCommand[]> _createConsoleCommands = new Lazy<ConsoleCommand[]>(CreateConsoleCommands);
-        private static readonly Lazy<PlayerEventCommand[]> _createPlayerCommands = new Lazy<PlayerEventCommand[]>(CreatePlayerCommands);
-
+        
         private static readonly Type[] _packetHandlerTypes =
         {
             typeof(ClientConnectHandler),
@@ -67,7 +64,8 @@ namespace SharpStar
             typeof(PlayerWarpHandler),
             typeof(ClientDisconnectRequestHandler),
             typeof(ChatSendHandler),
-            typeof(PlayerWarpResultHandler)
+            typeof(PlayerWarpResultHandler),
+            typeof(CallScriptedEntityHandler)
         };
 
         private static bool _shutdown;
@@ -81,14 +79,7 @@ namespace SharpStar
                 return _configFile.Config;
             }
         }
-
-        public static ConsoleCommand[] ConsoleCommandsToAdd
-        {
-            get
-            {
-                return _createConsoleCommands.Value;
-            }
-        }
+        
 
         public static Type[] HandlersToAdd
         {
@@ -98,13 +89,7 @@ namespace SharpStar
             }
         }
 
-        public static PlayerEventCommand[] PlayerCommands
-        {
-            get
-            {
-                return _createPlayerCommands.Value;
-            }
-        }
+        public static PlayerEventCommandManager PlayerCommandManager { get; private set; }
 
         [HandleProcessCorruptedStateExceptions]
         static void Main(string[] args)
@@ -124,9 +109,7 @@ namespace SharpStar
             catch (Exception ex)
             {
                 ex.LogError();
-
-                Console.ReadLine();
-
+                
                 return;
             }
 
@@ -217,7 +200,10 @@ namespace SharpStar
             StarMain.Instance.CurrentLocalization = new SimpleLocalizationFile("english.l10n");
             StarMain.Instance.Init();
 
-            StarMain.Instance.ConsoleCommandManager.AddCommands(ConsoleCommandsToAdd);
+            PlayerCommandManager = new PlayerEventCommandManager();
+            CreatePlayerCommands(PlayerCommandManager);
+
+            CreateConsoleCommands(StarMain.Instance.ConsoleCommandManager);
             StarMain.Instance.Server.AddPacketHandlers(HandlersToAdd);
 
             StarMain.Instance.Start();
@@ -354,33 +340,27 @@ namespace SharpStar
             }
         }
 
-        private static ConsoleCommand[] CreateConsoleCommands()
+        private static void CreateConsoleCommands(ConsoleCommandManager manager)
         {
-            return new ConsoleCommand[]
-            {
-                new HelpCommand(),
-                new KickAllCommand(),
-                new ListPlayersCommand(),
-                new ListCommand(),
-                new ReloadConfigsCommand(),
-                new UuidOfCommand(),
-                new BroadcastCommand(),
-                new WarpToWorldCommand(),
-                new BanHammerCommand(),
-                new MakeAdminCommand()
-            };
+            manager.AddCommand<HelpCommand>();
+            manager.AddCommand<KickAllCommand>();
+            manager.AddCommand<ListPlayersCommand>();
+            manager.AddCommand<ListCommand>();
+            manager.AddCommand<ReloadConfigsCommand>();
+            manager.AddCommand<UuidOfCommand>();
+            manager.AddCommand<BroadcastCommand>();
+            manager.AddCommand<WarpToWorldCommand>();
+            manager.AddCommand<BanHammerCommand>();
+            manager.AddCommand<MakeAdminCommand>();
         }
 
-        private static PlayerEventCommand[] CreatePlayerCommands()
+        private static void CreatePlayerCommands(PlayerEventCommandManager manager)
         {
-            return new PlayerEventCommand[]
-            {
-                new PlayerHelpCommand(),
-                new PlayerListCommand(),
-                new PlayerListPlayersCommand(),
-                new PlayerRegisterAccountCommand(),
-                new PlayerWarpToPlayerCommand(),
-            };
+            manager.AddCommand<PlayerHelpCommand>();
+            manager.AddCommand<PlayerListCommand>();
+            manager.AddCommand<PlayerListPlayersCommand>();
+            manager.AddCommand<PlayerRegisterAccountCommand>();
+            manager.AddCommand<PlayerWarpToPlayerCommand>();
         }
     }
 }

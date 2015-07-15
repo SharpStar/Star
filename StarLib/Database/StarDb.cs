@@ -21,6 +21,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using FluentNHibernate.Cfg;
 using NHibernate.Linq;
 using StarLib.Database.Models;
 using StarLib.Security;
@@ -36,6 +37,15 @@ namespace StarLib.Database
 
         public StarDb() : base(DbFileLocation)
         {
+        }
+
+        protected override FluentConfiguration CreateConfig(FluentConfiguration initial)
+        {
+#if !DEBUG
+            Migrate();
+#endif
+
+            return base.CreateConfig(initial);
         }
 
         public Character GetCharacter(int id)

@@ -78,6 +78,21 @@ namespace StarLib.Collections
             }
         }
 
+        public byte this[int index]
+        {
+            get
+            {
+                return _array[index];
+            }
+            set
+            {
+                if (index > _array.Length)
+                    throw new ArgumentOutOfRangeException("value");
+
+                _array[index] = value;
+            }
+        }
+
         public IEnumerator<byte> GetEnumerator()
         {
             return new ByteArraySegmentEnumerator(this);

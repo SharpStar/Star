@@ -18,60 +18,96 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 
 namespace StarLib.Commands
 {
-	public abstract class CommandManager : CommandManager<ParsedCommand, Command>
-	{
-		protected CommandManager()
-		{
-		}
+    public abstract class CommandManager<TCommand, TContext, TOut> : IEnumerable<CommandInfo>
+        where TCommand : ParsedCommand, new() where TContext : CommandContext where TOut : Command<TCommand, TContext>
+    {
 
-		protected CommandManager(Command[] commands) : base(commands)
-		{
-		}
-	}
+        public Dictionary<CommandInfo, Func<TContext, TOut>> Commands { get; private set; }
 
-	public abstract class CommandManager<TCommand, TOut> : IEnumerable<TOut> where TCommand : ParsedCommand where TOut : Command<TCommand>
-	{
+        protected CommandManager()
+        {
+            Commands = new Dictionary<CommandInfo, Func<TContext, TOut>>();
+        }
 
-		public List<TOut> Commands { get; private set; }
+        public void AddCommand<T>() where T : TOut, new()
+        {
+            T t = new T();
+            Type tType = typeof(T);
 
-		protected CommandManager()
-		{
-			Commands = new List<TOut>();
-		}
+            CommandInfo cInfo = new CommandInfo(tType, t.CommandName, t.Description);
+            ConstructorInfo coInfo = typeof(T).GetConstructor(Type.EmptyTypes);
 
-		protected CommandManager(TOut[] commands)
-		{
-			Commands = commands.ToList();
-		}
+            if (coInfo == null)
+                throw new NullReferenceException();
 
-		public void AddCommand(TOut command)
-		{
-			Commands.Add(command);
-		}
+            PropertyInfo cmdNameProp = tType.GetProperty("CommandName", BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo cmdDescProp = typeof(TOut).GetProperty("Description", BindingFlags.Public | BindingFlags.Instance);
+            PropertyInfo cmdCtxProp = tType.GetProperty("Context", BindingFlags.Public | BindingFlags.Instance);
 
-		public void AddCommands(IEnumerable<TOut> commands)
-		{
-			Commands.AddRange(commands);
-		}
+            var ctx = Expression.Parameter(typeof(TContext), "ctx");
+            var command = Expression.Variable(typeof(TOut), "cmd");
 
-		public void RemoveCommand(TOut command)
-		{
-			Commands.Remove(command);
+            var block = Expression.Block(new[] { command },
+                Expression.Assign(command, Expression.Convert(Expression.New(coInfo), typeof(TOut))),
+                Expression.Assign(Expression.Property(command, cmdCtxProp), ctx),
+                Expression.Assign(Expression.Property(command, cmdNameProp), Expression.Constant(t.CommandName)),
+                Expression.Assign(Expression.Property(command, cmdDescProp), Expression.Constant(t.Description)),
+                command
+            );
 
-		}
+            var func = Expression.Lambda<Func<TContext, TOut>>(block, ctx).Compile();
 
-		public IEnumerator<TOut> GetEnumerator()
-		{
-			return Commands.GetEnumerator();
-		}
+            Commands.Add(cInfo, func);
+        }
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
-	}
+        public virtual bool PassCommand(string command, TContext ctx)
+        {
+            bool result = false;
+
+            string[] ex = command.Split(' ');
+            
+            foreach (var cmd in Commands.Where(p => p.Key.Name.Equals(ex[0], StringComparison.CurrentCultureIgnoreCase)))
+            {
+                var newCmd = cmd.Value(ctx);
+
+                if (newCmd.PassCommand(command))
+                    result = true;
+            }
+
+            return result;
+        }
+
+        public void AddCommands(IDictionary<CommandInfo, Func<TContext, TOut>> commands)
+        {
+            foreach (var cmd in commands)
+            {
+                Commands.Add(cmd.Key, cmd.Value);
+            }
+        }
+
+        public void RemoveCommand(string command)
+        {
+            var cmds = Commands.Where(p => p.Key.Name.Equals(command, StringComparison.CurrentCultureIgnoreCase));
+
+            foreach (var cmd in cmds)
+            {
+                Commands.Remove(cmd.Key);
+            }
+        }
+
+        public IEnumerator<CommandInfo> GetEnumerator()
+        {
+            return Commands.Keys.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
 }

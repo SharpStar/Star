@@ -16,34 +16,25 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
 using System.Collections.Generic;
-using StarLib.Packets.Serialization.Attributes;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace StarLib.Packets.Starbound
+namespace StarLib.Commands
 {
-    //public class EntityUpdatePacket : Packet
-    //{
-    //    public override byte PacketId
-    //    {
-    //        get
-    //        {
-    //            return (byte)PacketType.EntityUpdate;
-    //        }
-    //        protected set
-    //        {
-    //            throw new NotImplementedException();
-    //        }
-    //    }
+    public class CommandInfo
+    {
+        public Type Type { get; set; }
 
-    //    public override bool AlwaysCompress
-    //    {
-    //        get
-    //        {
-    //            return true;
-    //        }
-    //    }
+        public string Name { get; set; }
+        
+        public string Description { get; set; }
 
-    //    [StarSerialize(0)]
-    //    [Greedy]
-    //    public IList<byte> Data { get; set; }
-    //}
+        public CommandInfo(Type type, string name, string description)
+        {
+            Type = type;
+            Name = name;
+            Description = description;
+        }
+    }
 }

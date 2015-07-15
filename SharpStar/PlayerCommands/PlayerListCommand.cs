@@ -20,76 +20,77 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StarLib;
+using StarLib.Commands;
 using StarLib.Commands.PlayerEvent;
 using StarLib.Extensions;
 using StarLib.Plugins;
 
 namespace SharpStar.PlayerCommands
 {
-	public class PlayerListCommand : PlayerEventCommand
-	{
-		public PlayerListCommand() : base(StarMain.Instance.CurrentLocalization["PlayerListCommandName"] ?? "starlist")
+    public class PlayerListCommand : PlayerEventCommand
+    {
+        public PlayerListCommand() : base(StarMain.Instance.CurrentLocalization["PlayerListCommandName"] ?? "starlist")
         {
-			Parts[string.Empty] = p =>
-			{
-				var player = p.Player;
+            Parts[string.Empty] = p =>
+            {
+                var player = Context.Player;
 
-				var sharpCommands = Program.PlayerCommands;
-				var pluginCommands = (from ipm in StarMain.Instance.PluginManagers
-									  from plugin in ipm.GetPlugins()
-									  from pec in plugin.PlayerCommandManager
-									  select pec);
+                var sharpCommands = Program.PlayerCommandManager;
+                var pluginCommands = (from ipm in StarMain.Instance.PluginManagers
+                                      from plugin in ipm.GetPlugins()
+                                      from pec in plugin.PlayerCommandManager
+                                      select pec);
 
 
-				foreach (PlayerEventCommand pec in sharpCommands.Concat(pluginCommands).Paged(0, 5))
-				{
-					player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-								string.Format("/{0} - {1}", pec.CommandName, pec.Description));
-				}
+                foreach (CommandInfo pec in sharpCommands.Concat(pluginCommands).Paged(0, 5))
+                {
+                    player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                                string.Format("/{0} - {1}", pec.Name, pec.Description));
+                }
 
-			};
+            };
 
-			Parts["{0}"] = p =>
-			{
-				int page;
+            Parts["{0}"] = p =>
+            {
+                int page;
 
-				if (!int.TryParse(p.Arguments[0], out page))
-				{
-					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                var player = Context.Player;
+
+                if (!int.TryParse(p.Arguments[0], out page))
+                {
+                    player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         StarMain.Instance.CurrentLocalization["PlayerListCommandInvalidPage"]);
                 }
 
-				var player = p.Player;
-
-				var sharpCommands = Program.PlayerCommands;
-				var pluginCommands = (from ipm in StarMain.Instance.PluginManagers
-									  from plugin in ipm.GetPlugins()
-									  from pec in plugin.PlayerCommandManager
-									  select pec);
+                var sharpCommands = Program.PlayerCommandManager;
+                var pluginCommands = (from ipm in StarMain.Instance.PluginManagers
+                                      from plugin in ipm.GetPlugins()
+                                      from pec in plugin.PlayerCommandManager
+                                      select pec);
 
 
-				foreach (PlayerEventCommand pec in sharpCommands.Concat(pluginCommands).Paged(page - 1, 5))
-				{
-					player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-								string.Format("/{0} - {1}", pec.CommandName, pec.Description));
-				}
+                foreach (CommandInfo pec in sharpCommands.Concat(pluginCommands).Paged(page - 1, 5))
+                {
+                    player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                                string.Format("/{0} - {1}", pec.Name, pec.Description));
+                }
 
-				player.Proxy.SendChatMessage("Star", "END");
+                player.Proxy.SendChatMessage("Star", "END");
 
-			};
-		}
-
-		public override string Description
-		{
-			get
-			{
-				return StarMain.Instance.CurrentLocalization["PlayerListCommandDesc"];
-			}
-		}
-
-		public override string GetHelp(string[] arguments)
-		{
-			return StarMain.Instance.CurrentLocalization["PlayerListCommandHelp"];
+            };
         }
-	}
+
+        public override string Description
+        {
+            get
+            {
+                return StarMain.Instance.CurrentLocalization["PlayerListCommandDesc"];
+            }
+        }
+
+        public override string GetHelp(string[] arguments)
+        {
+            return StarMain.Instance.CurrentLocalization["PlayerListCommandHelp"];
+        }
+    }
 }

@@ -36,7 +36,7 @@ namespace SharpStar.PacketHandlers
 			Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(_ =>
 			{
                 if (proxy.Connected)
-                    proxy.Close();
+                    proxy.CloseAsync().Wait();
 			});
 
             return Task.FromResult(false);

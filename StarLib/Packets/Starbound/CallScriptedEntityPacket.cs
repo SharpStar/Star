@@ -15,32 +15,33 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using System;
+using StarLib.DataTypes.Variant;
 using StarLib.Packets.Serialization.Attributes;
 
 namespace StarLib.Packets.Starbound
 {
-  //  public class CallScriptedEntityPacket : Packet
-  //  {
-        
-		//public override byte PacketId
-		//{
-		//	get
-		//	{
-		//		return (byte)PacketType.CallScriptedEntity;
-		//	}
-		//	protected set
-		//	{
-		//		throw new NotImplementedException();
-		//	}
-		//}
+    public class CallScriptedEntityPacket : Packet
+    {
 
-		//[StarSerialize(0)]
-		//public int EntityId { get;set; }
+        public override byte PacketId
+        {
+            get
+            {
+                return (byte)PacketType.CallScriptedEntity;
+            }
+            protected set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
-  //      [StarSerialize(1)]
-  //      public string Function { get; set; }
+        [StarSerialize(0)]
+        public int EntityId { get; set; }
 
-  //      [StarSerialize(2)]
-  //      public byte[] ScriptBytes { get; set; }
-  //  }
+        [StarSerialize(1)]
+        public string Function { get; set; }
+
+        [StarSerialize(2)]
+        public StarVariant Args { get; set; }
+    }
 }

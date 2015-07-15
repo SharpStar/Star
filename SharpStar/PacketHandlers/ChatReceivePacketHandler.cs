@@ -31,20 +31,13 @@ namespace SharpStar.PacketHandlers
 {
 	public class ChatReceivePacketHandler : PacketHandler<ChatReceivePacket>
 	{
-		private static readonly PlayerEventCommandManager PlrManager = new PlayerEventCommandManager();
-
-		static ChatReceivePacketHandler()
-		{
-			PlrManager.AddCommand(new PlayerHelpCommand());
-		}
-
 		public override Task HandleAsync(ChatReceivePacket packet, StarConnection connection)
 		{
 			if (packet.Message.StartsWith("/"))
 			{
 				string command = packet.Message.Substring(1);
 
-				if (!PlrManager.PassPlayerEventCommand(command, connection.Proxy.Player))
+				if (!Program.PlayerCommandManager.PassCommand(command, new PlayerCommandContext(connection.Proxy.Player)))
 					if (!StarMain.Instance.PassPlayerEventCommand(command, connection.Proxy.Player))
 						connection.Proxy.SendChatMessage("server", "No such command!");
 

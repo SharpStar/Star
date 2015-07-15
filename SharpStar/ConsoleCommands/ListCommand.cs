@@ -20,61 +20,62 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StarLib;
+using StarLib.Commands;
 using StarLib.Commands.Console;
 using StarLib.Extensions;
 using StarLib.Logging;
 
 namespace SharpStar.ConsoleCommands
 {
-	public class ListCommand : ConsoleCommand
-	{
-		public ListCommand() : base(StarMain.Instance.CurrentLocalization["ListConsoleCommandName"] ?? "list")
+    public class ListCommand : ConsoleCommand
+    {
+        public ListCommand() : base(StarMain.Instance.CurrentLocalization["ListConsoleCommandName"] ?? "list")
         {
-			Parts[string.Empty] = p =>
-			{
-				foreach (ConsoleCommand cmd in StarMain.Instance.ConsoleCommandManager.Paged(0))
-				{
-					StarLog.DefaultLogger.Info("{0} - {1}", cmd.CommandName, cmd.Description);
-				}
+            Parts[string.Empty] = p =>
+            {
+                foreach (CommandInfo cmd in StarMain.Instance.ConsoleCommandManager.Paged(0))
+                {
+                    StarLog.DefaultLogger.Info("{0} - {1}", cmd.Name, cmd.Description);
+                }
 
-				StarLog.DefaultLogger.Info(string.Format(StarMain.Instance.CurrentLocalization["ListConsoleCommandPageFormat"], 1,
-					Math.Ceiling(StarMain.Instance.ConsoleCommandManager.Count() / 6.0)));
-			};
+                StarLog.DefaultLogger.Info(string.Format(StarMain.Instance.CurrentLocalization["ListConsoleCommandPageFormat"], 1,
+                    Math.Ceiling(StarMain.Instance.ConsoleCommandManager.Count() / 6.0)));
+            };
 
-			Parts["{0}"] = p =>
-			{
-				int page = 1;
-				if (p.Arguments.Length == 1)
-				{
-					if (!int.TryParse(p.Arguments[0], out page))
-					{
-						StarLog.DefaultLogger.Info(StarMain.Instance.CurrentLocalization["ListConsoleCommandInvalidPage"]);
+            Parts["{0}"] = p =>
+            {
+                int page = 1;
+                if (p.Arguments.Length == 1)
+                {
+                    if (!int.TryParse(p.Arguments[0], out page))
+                    {
+                        StarLog.DefaultLogger.Info(StarMain.Instance.CurrentLocalization["ListConsoleCommandInvalidPage"]);
 
-						return;
-					}
-				}
-				
-				var commands = StarMain.Instance.ConsoleCommandManager;
-                foreach (ConsoleCommand cmd in commands.Paged(page - 1, 6))
-				{
-					StarLog.DefaultLogger.Info("{0} - {1}", cmd.CommandName, cmd.Description);
-				}
+                        return;
+                    }
+                }
 
-				StarLog.DefaultLogger.Info(StarMain.Instance.CurrentLocalization["ListConsoleCommandPageFormat"], page,
-					Math.Ceiling(commands.Count() / 6.0));
-			};
-		}
+                var commands = StarMain.Instance.ConsoleCommandManager;
+                foreach (CommandInfo cmd in commands.Paged(page - 1, 6))
+                {
+                    StarLog.DefaultLogger.Info("{0} - {1}", cmd.Name, cmd.Description);
+                }
 
-		public override string Description
-		{
-			get
-			{
-				return StarMain.Instance.CurrentLocalization["ListConsoleCommandDesc"];
-			}
-		}
-		public override string GetHelp(string[] arguments)
-		{
-			return StarMain.Instance.CurrentLocalization["ListConsoleCommandHelp"];
+                StarLog.DefaultLogger.Info(StarMain.Instance.CurrentLocalization["ListConsoleCommandPageFormat"], page,
+                    Math.Ceiling(commands.Count() / 6.0));
+            };
         }
-	}
+
+        public override string Description
+        {
+            get
+            {
+                return StarMain.Instance.CurrentLocalization["ListConsoleCommandDesc"];
+            }
+        }
+        public override string GetHelp(string[] arguments)
+        {
+            return StarMain.Instance.CurrentLocalization["ListConsoleCommandHelp"];
+        }
+    }
 }

@@ -87,7 +87,7 @@ namespace StarLib.Scheduling
 
         protected virtual void Run()
         {
-            Task.Run(async () =>
+            new Thread(() =>
             {
                 while (Running)
                 {
@@ -134,15 +134,19 @@ namespace StarLib.Scheduling
                             tasks.Add(Task.Delay(ts, _cts.Token));
                         }
 
-                        await Task.WhenAny(tasks);
+                        Task.WhenAny(tasks).Wait();
 
                         _cts.Cancel();
                     }
                     catch
                     {
                     }
+                    finally
+                    {
+                        Thread.Sleep(1);
+                    }
                 }
-            });
+            }).Start();
         }
 
         public virtual SchedulerJob ScheduleAsync(TimeSpan ts, ISchedulerJob toExecute, bool recurring)
@@ -152,7 +156,7 @@ namespace StarLib.Scheduling
                 var job = new SchedulerJob(toExecute, ts, recurring ? ScheduleType.Recurring : ScheduleType.Once, true);
                 _jobs.Add(job);
 
-                if (_semaphore.CurrentCount > 0)
+                if (_semaphore.CurrentCount == 0)
                     _semaphore.Release();
 
                 return job;
@@ -166,7 +170,7 @@ namespace StarLib.Scheduling
                 var job = new SchedulerJob(toExecute, time.ToUniversalTime(), ScheduleType.Once, true);
                 _jobs.Add(job);
 
-                if (_semaphore.CurrentCount > 0)
+                if (_semaphore.CurrentCount == 0)
                     _semaphore.Release();
 
                 return job;

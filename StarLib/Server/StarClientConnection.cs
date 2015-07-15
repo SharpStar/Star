@@ -31,7 +31,7 @@ namespace StarLib.Server
     /// </summary>
     public class StarClientConnection : StarConnection
     {
-        public StarClientConnection(TcpClient client, Type[] packetTypes)
+        public StarClientConnection(Socket client, Type[] packetTypes)
             : base(packetTypes)
         {
             ConnectionClient = client;
@@ -54,15 +54,20 @@ namespace StarLib.Server
 
         protected override async Task CloseAsync()
         {
+            Task sendPacket = null;
+
             try
             {
                 if (Proxy.ServerConnection != null)
-                    await Proxy.ServerConnection.SendPacketAsync(new ClientDisconnectRequestPacket());
+                    sendPacket = Proxy.ServerConnection.SendPacketAsync(new ClientDisconnectRequestPacket());
             }
             catch (Exception ex)
             {
                 ex.LogError();
             }
+
+            if (sendPacket != null)
+                await sendPacket;
 
             await base.CloseAsync();
         }

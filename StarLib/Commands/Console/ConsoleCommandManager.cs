@@ -22,13 +22,15 @@ using System.Threading.Tasks;
 
 namespace StarLib.Commands.Console
 {
-    public class ConsoleCommandManager : CommandManager<ParsedCommand, ConsoleCommand>
+    public class ConsoleCommandManager : CommandManager<ParsedCommand, CommandContext, ConsoleCommand>
     {
         public void TryPassConsoleCommand(string command)
         {
-            foreach (var cmd in Commands)
+            string[] ex = command.Split(' ');
+
+            foreach (var cmd in Commands.Where(p => p.Key.Name.Equals(ex[0], StringComparison.CurrentCultureIgnoreCase)))
             {
-                cmd.PassConsoleCommand(command);
+                cmd.Value(new CommandContext()).PassCommand(command);
             }
         }
     }

@@ -20,6 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using StarLib;
+using StarLib.Commands;
 using StarLib.Commands.PlayerEvent;
 using StarLib.Extensions;
 using StarLib.Plugins;
@@ -27,53 +28,59 @@ using StarLib.Starbound;
 
 namespace SharpStar.PlayerCommands
 {
-	public class PlayerHelpCommand : PlayerEventCommand
-	{
-		public override string Description
-		{
-			get { return StarMain.Instance.CurrentLocalization["PlayerHelpCommandDesc"]; }
-		}
+    public class PlayerHelpCommand : PlayerEventCommand
+    {
+        public override string Description
+        {
+            get { return StarMain.Instance.CurrentLocalization["PlayerHelpCommandDesc"]; }
+        }
 
-		public PlayerHelpCommand() : base(StarMain.Instance.CurrentLocalization["PlayerHelpCommandName"] ?? "starhelp")
-		{
-			Parts[string.Empty] = p =>
-			{
-				p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-					GetHelp(null));
-			};
+        public PlayerHelpCommand() : base(StarMain.Instance.CurrentLocalization["PlayerHelpCommandName"] ?? "starhelp")
+        {
+            Parts[string.Empty] = p =>
+            {
+                Context.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    GetHelp(null));
+            };
 
-			Parts["{0}"] = p =>
-			{
-				Player player = p.Player;
+            Parts["{0}"] = p =>
+            {
+                Player player = Context.Player;
 
-				PlayerEventCommand sharpCmd = Program.PlayerCommands.SingleOrDefault(x => x.CommandName.Equals(p.Arguments[0]));
+                CommandInfo cmdInfo = Program.PlayerCommandManager.SingleOrDefault(x => x.Name.Equals(p.Arguments[0], StringComparison.CurrentCultureIgnoreCase));
 
-				if (sharpCmd != null)
-				{
-					player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-						sharpCmd.GetHelp(p.Arguments.Skip(1).ToArray()));
+                if (cmdInfo != null)
+                {
+                    PlayerEventCommand sharpCmd = (PlayerEventCommand)Activator.CreateInstance(cmdInfo.Type);
 
-					return;
-				}
+                    player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                        sharpCmd.GetHelp(p.Arguments.Skip(1).ToArray()));
 
-				foreach (IPluginManager ipm in StarMain.Instance.PluginManagers)
-				{
-					foreach (IPlugin plugin in ipm.GetPlugins())
-					{
-						PlayerEventCommand cmd = plugin.PlayerCommandManager.SingleOrDefault(x => x.CommandName.Equals(p.Arguments[0]));
+                    return;
+                }
 
-						if (cmd != null)
-							player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
-								cmd.GetHelp(p.Arguments.Skip(1).ToArray()));
-					}
-				}
-			};
+                foreach (IPluginManager ipm in StarMain.Instance.PluginManagers)
+                {
+                    foreach (IPlugin plugin in ipm.GetPlugins())
+                    {
+                        CommandInfo info = plugin.PlayerCommandManager.SingleOrDefault(x => x.Name.Equals(p.Arguments[0], StringComparison.CurrentCultureIgnoreCase));
 
-		}
+                        if (info != null)
+                        {
+                            PlayerEventCommand cmd = (PlayerEventCommand)Activator.CreateInstance(info.Type);
 
-		public override string GetHelp(string[] arguments)
-		{
-			return StarMain.Instance.CurrentLocalization["PlayerHelpCommandHelp"];
-		}
-	}
+                            player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                                cmd.GetHelp(p.Arguments.Skip(1).ToArray()));
+                        }
+                    }
+                }
+            };
+
+        }
+
+        public override string GetHelp(string[] arguments)
+        {
+            return StarMain.Instance.CurrentLocalization["PlayerHelpCommandHelp"];
+        }
+    }
 }

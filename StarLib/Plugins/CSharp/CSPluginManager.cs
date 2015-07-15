@@ -25,6 +25,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Mono.Addins;
 using Mono.Addins.Setup;
+using StarLib.Commands.PlayerEvent;
 using StarLib.Events.Packets;
 using StarLib.Extensions;
 using StarLib.Logging;
@@ -284,9 +285,10 @@ namespace StarLib.Plugins.CSharp
 		{
 			bool foundCommand = false;
 
-			foreach (CSPlugin plugin in _plugins.Values)
+            var ctx = new PlayerCommandContext(player);
+            foreach (CSPlugin plugin in _plugins.Values)
 			{
-				if (plugin.PlayerCommandManager.PassPlayerEventCommand(command, player))
+				if (plugin.PlayerCommandManager.PassCommand(command, ctx))
 					foundCommand = true;
 			}
 

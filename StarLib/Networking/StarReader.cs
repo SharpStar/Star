@@ -25,109 +25,134 @@ using StarLib.DataTypes.Variant;
 
 namespace StarLib.Networking
 {
-	/// <summary>
-	/// A specialized BinaryReader that is able to read Starbound data types<para/>
-	/// For writing, see <seealso cref="StarWriter"/>
-	/// </summary>
-	public class StarReader : BinaryReader
-	{
-		public StarReader(byte[] data) : base(new MemoryStream(data))
-		{
-		}
+    /// <summary>
+    /// A specialized BinaryReader that is able to read Starbound data types<para/>
+    /// For writing, see <seealso cref="StarWriter"/>
+    /// </summary>
+    public class StarReader : BinaryReader
+    {
+        public new MemoryStream BaseStream { get; protected set; }
 
-		public long DataLeft
-		{
-			get
-			{
-				return BaseStream.Length - BaseStream.Position;
-			}
-		}
+        public StarReader(byte[] data) : base(new MemoryStream(data))
+        {
+            BaseStream = (MemoryStream)base.BaseStream;
+        }
 
-		/// <summary>
-		/// Read a VLQ-specified amount of bytes from the stream
-		/// </summary>
-		/// <returns>The data</returns>
-		public byte[] ReadUInt8Array()
-		{
-			int length = (int)ReadVLQ();
+        public long DataLeft
+        {
+            get
+            {
+                return BaseStream.Length - BaseStream.Position;
+            }
+        }
 
-			return ReadBytes(length);
-		}
+        /// <summary>
+        /// Read a VLQ-specified amount of bytes from the stream
+        /// </summary>
+        /// <returns>The data</returns>
+        public byte[] ReadUInt8Array()
+        {
+            int length = (int)ReadVLQ();
 
-		//public override int ReadInt32()
-		//{
-		//	return (int)ReadUInt32();
-		//}
+            return ReadBytes(length);
+        }
 
-		public override uint ReadUInt32()
-		{
-			return (uint)(
-			   (ReadByte() << 24) |
-			   (ReadByte() << 16) |
-			   (ReadByte() << 8) |
-				ReadByte());
-		}
+        //public override int ReadInt32()
+        //{
+        //	return (int)ReadUInt32();
+        //}
 
-		public override long ReadInt64()
-		{
-			return (long)ReadUInt64();
-		}
+        public override uint ReadUInt32()
+        {
+            return (uint)(
+               (ReadByte() << 24) |
+               (ReadByte() << 16) |
+               (ReadByte() << 8) |
+                ReadByte());
+        }
 
-		public override ulong ReadUInt64()
-		{
-			return unchecked(
-				((ulong)ReadByte() << 56) |
-				((ulong)ReadByte() << 48) |
-				((ulong)ReadByte() << 40) |
-				((ulong)ReadByte() << 32) |
-				((ulong)ReadByte() << 24) |
-				((ulong)ReadByte() << 16) |
-				((ulong)ReadByte() << 8) |
-				(ulong)ReadByte());
-		}
+        public override long ReadInt64()
+        {
+            return (long)ReadUInt64();
+        }
 
-		public byte[] ReadToEnd()
-		{
-			return ReadBytes((int)(BaseStream.Length - BaseStream.Position));
-		}
+        public override ulong ReadUInt64()
+        {
+            return unchecked(
+                ((ulong)ReadByte() << 56) |
+                ((ulong)ReadByte() << 48) |
+                ((ulong)ReadByte() << 40) |
+                ((ulong)ReadByte() << 32) |
+                ((ulong)ReadByte() << 24) |
+                ((ulong)ReadByte() << 16) |
+                ((ulong)ReadByte() << 8) |
+                (ulong)ReadByte());
+        }
 
-		/// <summary>
-		/// Reads a string with a VLQ-specified length from the stream
-		/// </summary>
-		/// <returns>The string</returns>
-		public override string ReadString()
-		{
-			return Encoding.UTF8.GetString(ReadUInt8Array());
-		}
+        public byte[] ReadToEnd()
+        {
+            return ReadBytes((int)(BaseStream.Length - BaseStream.Position));
+        }
 
-		/// <summary>
-		/// Reads a VLQ from the stream
-		/// </summary>
-		/// <returns>A VLQ</returns>
-		public ulong ReadVLQ()
-		{
-            bool succces;
-			int size;
-			ulong result = VLQ.FromFunc(_ => ReadByte(), ctr => true, out size, out succces);
+        /// <summary>
+        /// Reads a string with a VLQ-specified length from the stream
+        /// </summary>
+        /// <returns>The string</returns>
+        public override string ReadString()
+        {
+            return Encoding.UTF8.GetString(ReadUInt8Array());
+        }
 
-            if (!succces)
-                throw new Exception("Could not parse VLQ!");
+        public ulong ReadVLQ()
+        {
+            int length;
+            bool success;
+            ulong result = ReadVLQ(out length, out success);
+
+            if (!success)
+                throw new Exception("Error reading VLQ!");
 
             return result;
-		}
+        }
 
-		/// <summary>
-		/// Reads a Signed VLQ from the stream
-		/// </summary>
-		/// <returns>A signed VLQ</returns>
-		public long ReadSignedVLQ()
-		{
-			ulong value = ReadVLQ();
+        /// <summary>
+        /// Reads a VLQ from the stream
+        /// </summary>
+        /// <returns>A VLQ</returns>
+        public ulong ReadVLQ(out int length, out bool success)
+        {
+            ulong result = VLQ.FromFunc(_ => ReadByte(), ctr => true, out length, out success);
 
-			if ((value & 1) == 0x00)
-				return (long)value >> 1;
+            if (!success)
+                return 0;
 
-			return -((long)(value >> 1) + 1);
-		}
-	}
+            return result;
+        }
+
+        public long ReadSignedVLQ()
+        {
+            int length;
+            bool success;
+            long result = ReadSignedVLQ(out length, out success);
+
+            if (!success)
+                throw new Exception("Error reading sVLQ!");
+
+            return result;
+        }
+
+        /// <summary>
+        /// Reads a Signed VLQ from the stream
+        /// </summary>
+        /// <returns>A signed VLQ</returns>
+        public long ReadSignedVLQ(out int length, out bool success)
+        {
+            ulong value = ReadVLQ(out length, out success);
+
+            if ((value & 1) == 0x00)
+                return (long)value >> 1;
+
+            return -((long)(value >> 1) + 1);
+        }
+    }
 }

@@ -25,70 +25,78 @@ using StarLib.DataTypes.Variant;
 
 namespace StarLib.Networking
 {
-	/// <summary>
-	/// A specialized BinaryWriter that is able to write Starbound data types<para/>
-	/// For reading, use <seealso cref="StarReader"/>
-	/// </summary>
-	public class StarWriter : BinaryWriter
-	{
-		public new MemoryStream BaseStream { get; private set; }
+    /// <summary>
+    /// A specialized BinaryWriter that is able to write Starbound data types<para/>
+    /// For reading, use <seealso cref="StarReader"/>
+    /// </summary>
+    public class StarWriter : BinaryWriter
+    {
+        public new MemoryStream BaseStream { get; private set; }
 
-		public StarWriter()
-			: base(new MemoryStream())
-		{
-			BaseStream = (MemoryStream)base.BaseStream;
-		}
+        public StarWriter()
+            : this(new MemoryStream())
+        {
+        }
 
-		public void WriteUInt8Array(byte[] data)
-		{
-			WriteVlq((ulong)data.Length);
-			Write(data);
-		}
+        public StarWriter(MemoryStream stream) : base(stream)
+        {
+            BaseStream = stream;
+        }
+        
+        public StarWriter(int initialLen) : this(new MemoryStream(initialLen))
+        {
+        }
 
-		/// <summary>
-		/// Writes a string to the stream with a VLQ length
-		/// </summary>
-		/// <param name="str">The string to write</param>
-		public void WriteStarString(string str)
-		{
-			WriteUInt8Array(Encoding.UTF8.GetBytes(str));
-		}
+        public void WriteUInt8Array(byte[] data)
+        {
+            WriteVlq((ulong)data.Length);
+            Write(data);
+        }
 
-		public override void Write(ulong value)
-		{
-			WriteVlq(value);
-		}
+        /// <summary>
+        /// Writes a string to the stream with a VLQ length
+        /// </summary>
+        /// <param name="str">The string to write</param>
+        public void WriteStarString(string str)
+        {
+            WriteUInt8Array(Encoding.UTF8.GetBytes(str));
+        }
 
-		public override void Write(int value)
-		{
-			Write((uint)value);
-		}
+        public override void Write(ulong value)
+        {
+            WriteVlq(value);
+        }
 
-		/// <summary>
-		/// Write a VLQ to the stream
-		/// </summary>
-		/// <param name="vlq">The VLQ to write</param>
-		public void WriteVlq(ulong vlq)
-		{
-			byte[] buffer = VLQ.Create(vlq);
+        public override void Write(int value)
+        {
+            Write((uint)value);
+        }
 
-			Write(buffer);
-		}
+        /// <summary>
+        /// Write a VLQ to the stream
+        /// </summary>
+        /// <param name="vlq">The VLQ to write</param>
+        public void WriteVlq(ulong vlq)
+        {
+            byte[] buffer = VLQ.Create(vlq);
 
-		/// <summary>
-		/// Write a Signed VLQ to the stream
-		/// </summary>
-		/// <param name="vlq">The VLQ to write</param>
-		public void WriteSignedVLQ(long vlq)
-		{
-			byte[] buffer = VLQ.CreateSigned(vlq);
+            Write(buffer);
+        }
 
-			Write(buffer);
-		}
+        /// <summary>
+        /// Write a Signed VLQ to the stream
+        /// </summary>
+        /// <param name="vlq">The VLQ to write</param>
+        public void WriteSignedVLQ(long vlq)
+        {
+            byte[] buffer = VLQ.CreateSigned(vlq);
 
-		public byte[] ToArray()
-		{
-			return BaseStream.ToArray();
-		}
-	}
+            Write(buffer);
+        }
+
+        public byte[] ToArray()
+        {
+            return BaseStream.ToArray();
+        }
+    }
 }

@@ -16,10 +16,10 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 namespace StarLib.Commands.Console
 {
-    public abstract class ConsoleCommand : Command
+    public abstract class ConsoleCommand : Command<ParsedCommand, CommandContext>
     {
         protected ConsoleCommand(string commandName)
-            : base(commandName, new ConsoleCommandParts(commandName))
+            : base(commandName, new ConsoleCommandParts(commandName), new CommandContext())
         {
         }
 

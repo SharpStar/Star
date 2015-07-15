@@ -174,7 +174,7 @@ namespace SharpStar.Server
 
                 try
                 {
-                    proxy.Close();
+                    proxy.CloseAsync().Wait();
                 }
                 catch
                 {

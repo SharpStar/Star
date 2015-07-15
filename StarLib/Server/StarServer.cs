@@ -68,8 +68,10 @@ namespace StarLib.Server
             }
         }
 
-        public bool AcceptingConnections { get; set; }
+        public SocketAsyncEventArgsPool SocketPool { get; set; }
 
+        public bool AcceptingConnections { get; set; }
+        
         protected ServerConfiguration ServerConfig { get; private set; }
 
         /// <summary>
@@ -125,6 +127,8 @@ namespace StarLib.Server
 
             _packetHandlers = new Dictionary<Type, Func<IPacketHandler>>();
             AddPacketHandlers(packetHandlerTypes);
+
+            SocketPool = new SocketAsyncEventArgsPool(config.MaxConnections * 2, config.MaxConnections * 4, 65536);
 
             _serverRunning = 0;
         }
@@ -196,7 +200,7 @@ namespace StarLib.Server
             AcceptingConnections = true;
 
             ListenSocket = new TcpListener(LocalEndPoint.Address, LocalEndPoint.Port);
-            ListenSocket.Server.NoDelay = true;
+            //ListenSocket.Server.NoDelay = true;
             //ListenSocket.Server.ReceiveBufferSize = 2048;
             //ListenSocket.Server.SendBufferSize = 2048;
 
@@ -226,9 +230,9 @@ namespace StarLib.Server
 
             Task.Run(() =>
             {
-                Parallel.ForEach(Proxies, async proxy =>
+                Parallel.ForEach(Proxies, proxy =>
                  {
-                     await proxy.CloseAsync();
+                     proxy.CloseAsync().Wait();
                  });
             }).Wait();
 
@@ -238,37 +242,34 @@ namespace StarLib.Server
             ListenSocket = null;
         }
 
-        protected virtual async Task StartAccept()
+        protected virtual void StartAccept()
         {
             try
             {
-                TcpClient client = await ListenSocket.AcceptTcpClientAsync();
-                await ProcessAccept(client);
+                TcpClient client = ListenSocket.AcceptTcpClient();
+
+                ProcessAccept(client);
             }
             catch
             {
             }
 
             if (ServerRunning)
-                await StartAccept();
+                StartAccept();
         }
 
-        protected async Task ProcessAccept(TcpClient client)
+        protected void ProcessAccept(TcpClient client)
         {
             if (ListenSocket == null || !ServerRunning)
                 return;
 
             if (!client.Connected)
-            {
-                await StartAccept();
-
                 return;
-            }
 
             if (!AcceptingConnections)
             {
-                client.Client.Shutdown(SocketShutdown.Both);
-                client.Client.Close();
+                client.Client.Shutdown(SocketShutdown.Send);
+                client.Close();
 
                 return;
             }
@@ -281,8 +282,8 @@ namespace StarLib.Server
 
                 //TODO: Simulate connnection, return error message to player
 
-                client.Client.Shutdown(SocketShutdown.Both);
-                client.Client.Close();
+                client.Client.Shutdown(SocketShutdown.Send);
+                client.Close();
 
                 return;
             }
@@ -290,15 +291,11 @@ namespace StarLib.Server
             Interlocked.Increment(ref _numConnected);
             Interlocked.Increment(ref _totalJoined);
 
-            new Thread(async () =>
+            try
             {
-                try
+                Thread proxyThread = new Thread(() =>
                 {
-                    //client.Client.ReceiveBufferSize = 2048;
-                    //client.Client.SendBufferSize = 2048;
-                    client.NoDelay = true;
-
-                    StarClientConnection cl = new StarClientConnection(client, _packetTypes);
+                    StarClientConnection cl = new StarClientConnection(client.Client, _packetTypes);
                     cl.RegisterPacketHandlers(_packetHandlers.Select(p => p.Value()));
 
                     StarServerConnection server = new StarServerConnection(_packetTypes);
@@ -309,17 +306,16 @@ namespace StarLib.Server
 
                     Proxies.AddProxy(starProxy.ConnectionId, starProxy);
 
-                    Thread.CurrentThread.Name = starProxy.ConnectionId;
+                    starProxy.Start();
+                });
 
-                    await starProxy.StartAsync();
-
-                    StarLog.DefaultLogger.Debug("Client disconnected, exiting client thread {0}", Thread.CurrentThread.Name);
-                }
-                catch (Exception ex)
-                {
-                    ex.LogError();
-                }
-            }).Start();
+                proxyThread.IsBackground = true;
+                proxyThread.Start();
+            }
+            catch (Exception ex)
+            {
+                ex.LogError();
+            }
         }
     }
 }

@@ -100,6 +100,7 @@
     <Compile Include="ConsoleCommands\WarpToWorldCommand.cs" />
     <Compile Include="Extensions\ObservableExtensions.cs" />
     <Compile Include="Native\NativeMethods.cs" />
+    <Compile Include="PacketHandlers\CallScriptedEntityHandler.cs" />
     <Compile Include="PacketHandlers\CelestialRequestHandler.cs" />
     <Compile Include="PacketHandlers\ChatReceivePacketHandler.cs" />
     <Compile Include="PacketHandlers\ChatSendHandler.cs" />

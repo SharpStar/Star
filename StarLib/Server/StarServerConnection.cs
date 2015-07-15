@@ -31,7 +31,6 @@ namespace StarLib.Server
     /// </summary>
     public class StarServerConnection : StarConnection
     {
-
         public override Direction Direction
         {
             get { return Direction.Server; }
@@ -42,34 +41,37 @@ namespace StarLib.Server
         {
         }
 
-        public override async Task StartAsync()
+        public override Task StartAsync()
         {
-            ConnectionClient = new TcpClient();
-            ConnectionClient.NoDelay = true;
-            //ConnectionClient.ReceiveBufferSize = 2048;
-            //ConnectionClient.SendBufferSize = 2048;
+            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
-            bool failed = false;
-            try
+            SocketAsyncEventArgs args = new SocketAsyncEventArgs();
+            args.RemoteEndPoint = Proxy.ListeningServer.ServerEndPoint;
+            args.Completed += Connection_Completed;
+
+            socket.ConnectAsync(args);
+
+            return Completed.Task;
+        }
+
+        private async void Connection_Completed(object sender, SocketAsyncEventArgs e)
+        {
+            if (e.SocketError == SocketError.Success)
             {
-                await ConnectionClient.ConnectAsync(StarMain.Instance.Server.ServerEndPoint.Address, StarMain.Instance.Server.ServerEndPoint.Port);
+                ConnectionClient = e.ConnectSocket;
+
+                await StartReceiveAsync();
             }
-            catch (Exception ex)
+            else
             {
-                StarLog.DefaultLogger.Error("Proxy connection to server has failed.");
-                ex.LogError();
+                StarLog.DefaultLogger.Warn("Could not connect to server!");
 
-                failed = true;
-            }
+                Completed.SetResult(false);
 
-            if (failed)
-            {
                 await Proxy.CloseAsync();
-
-                return;
             }
 
-            await StartReceiveAsync();
+            e.Dispose();
         }
 
         public override Task StopAsync()

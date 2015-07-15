@@ -110,10 +110,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\ByteArrayList.cs" />
     <Compile Include="Collections\ByteArraySegment.cs" />
     <Compile Include="Commands\Command.cs" />
+    <Compile Include="Commands\CommandContext.cs" />
     <Compile Include="Commands\CommandError.cs" />
     <Compile Include="Commands\CommandExecutorPart.cs" />
+    <Compile Include="Commands\CommandInfo.cs" />
     <Compile Include="Commands\CommandManager.cs" />
     <Compile Include="Commands\CommandPart.cs" />
     <Compile Include="Commands\CommandParts.cs" />
@@ -128,6 +131,7 @@
     <Compile Include="Commands\ParsedCommand.cs" />
     <Compile Include="Commands\PlayerEvent\ParsedPlayerEventCommand.cs" />
     <Compile Include="Commands\PlayerEvent\PermissionDeniedException.cs" />
+    <Compile Include="Commands\PlayerEvent\PlayerCommandContext.cs" />
     <Compile Include="Commands\PlayerEvent\PlayerEventCommand.cs" />
     <Compile Include="Commands\PlayerEvent\PlayerEventCommandManager.cs" />
     <Compile Include="Commands\PlayerEvent\PlayerEventCommandParts.cs" />
@@ -232,6 +236,8 @@
     <Compile Include="Scheduling\SchedulerJob.cs" />
     <Compile Include="Scheduling\ScheduleType.cs" />
     <Compile Include="Scheduling\StarScheduler.cs" />
+    <Compile Include="Server\BufferManager.cs" />
+    <Compile Include="Server\SocketAsyncEventArgsPool.cs" />
     <Compile Include="Starbound\BTree\Block.cs" />
     <Compile Include="Starbound\BTree\BlockSignature.cs" />
     <Compile Include="Starbound\BTree\BTreeDb4.cs" />

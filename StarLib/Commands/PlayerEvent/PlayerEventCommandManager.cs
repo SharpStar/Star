@@ -23,11 +23,7 @@ using StarLib.Starbound;
 
 namespace StarLib.Commands.PlayerEvent
 {
-    public class PlayerEventCommandManager : CommandManager<ParsedPlayerEventCommand, PlayerEventCommand>
+    public class PlayerEventCommandManager : CommandManager<ParsedPlayerEventCommand, PlayerCommandContext, PlayerEventCommand>
     {
-        public bool PassPlayerEventCommand(string command, Player player)
-        {
-	        return Commands.Any(cmd => cmd.PassPlayerEventCommand(command, player));
-        }
     }
 }

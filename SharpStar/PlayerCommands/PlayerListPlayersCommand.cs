@@ -32,7 +32,7 @@ namespace SharpStar.PlayerCommands
 		{
 			Parts[string.Empty] = p =>
 			{
-				SendPlayerInfos(p.Player, StarMain.Instance.Server.Proxies.Where(x => x.Player != null).Select(x => x.Player).Paged(0, 5));
+				SendPlayerInfos(Context.Player, StarMain.Instance.Server.Proxies.Where(x => x.Player != null).Select(x => x.Player).Paged(0, 5));
 			};
 
 			Parts["{0}"] = p =>
@@ -41,11 +41,11 @@ namespace SharpStar.PlayerCommands
 
 				if (!int.TryParse(p.Arguments[0], out page))
 				{
-					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+					Context.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
 						string.Format(StarMain.Instance.CurrentLocalization["PlayerListPlayersCommandInvalidPage"]));
 				}
 
-				SendPlayerInfos(p.Player, StarMain.Instance.Server.Proxies.Where(x => x.Player != null).Select(x => x.Player).Paged(page - 1, 5));
+				SendPlayerInfos(Context.Player, StarMain.Instance.Server.Proxies.Where(x => x.Player != null).Select(x => x.Player).Paged(page - 1, 5));
 			};
 
 			Parts["{0} {1}"] = p =>
@@ -55,11 +55,11 @@ namespace SharpStar.PlayerCommands
 
 				if (!int.TryParse(p.Arguments[0], out page))
 				{
-					p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    Context.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
 						string.Format(StarMain.Instance.CurrentLocalization["PlayerListPlayersCommandInvalidPage"]));
 				}
 
-				SendPlayerInfos(p.Player, StarMain.Instance.Server.Proxies.Where(x => x.Player != null).Select(x => x.Player)
+				SendPlayerInfos(Context.Player, StarMain.Instance.Server.Proxies.Where(x => x.Player != null).Select(x => x.Player)
 					.Where(x => x.Name.IndexOf(p.Arguments[1], StringComparison.CurrentCultureIgnoreCase) >= 0).Paged(page - 1, 5));
 			};
 		}

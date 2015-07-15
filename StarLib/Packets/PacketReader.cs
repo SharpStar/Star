@@ -33,8 +33,6 @@ namespace StarLib.Packets
     public class PacketReader
     {
 
-        private readonly PacketSegmentProcessor _processor;
-
         private readonly Dictionary<byte, Type> _packets;
 
         private static readonly Type GenericPacketType = typeof(GenericPacket);
@@ -46,7 +44,6 @@ namespace StarLib.Packets
         /// </summary>
         public PacketReader()
         {
-            _processor = new PacketSegmentProcessor();
             _packets = new Dictionary<byte, Type>();
         }
 
@@ -101,29 +98,31 @@ namespace StarLib.Packets
         /// <summary>
         /// Read all packets that is contained within this buffer
         /// </summary>
+        /// <param name="processor">The packet segment processor to use</param>
         /// <param name="buffer">The buffer to read from</param>
         /// <param name="offset">The position to start at</param>
         /// <param name="length">The length of the buffer</param>
         /// <returns>One or more packets that have been decoded from the buffer</returns>
-        public List<Packet> Read(byte[] buffer, int offset, int length)
+        public IEnumerable<Packet> Read(PacketSegmentProcessor processor, byte[] buffer, int offset, int length)
         {
-            var packets = new List<Packet>();
+            bool complete;
+            processor.ProcessNextSegment(buffer, offset, length, out complete); //first segment
 
-            _processor.ProcessNextSegment(buffer, offset, length); //first segment
-            
-            if (_processor.CurrentPacketData == null)
-                return packets;
+            if (processor.CurrentPacketData == null)
+                yield break;
 
             while (true)
             {
-                packets.Add(Decode(_processor.CurrentPacketId, _processor.CurrentPacketData));
-
-                if (!_processor.ProcessNextSegment(EmptyBuffer, offset, length))
+                yield return Decode(processor.CurrentPacketId, processor.CurrentPacketData);
+                
+                if (!processor.ProcessNextSegment(EmptyBuffer, offset, length, out complete))
                 {
-                    if (_processor.CurrentPacketData != null)
-                        packets.Add(Decode(_processor.CurrentPacketId, _processor.CurrentPacketData));
+                    if (processor.CurrentPacketData != null)
+                    {
+                        yield return Decode(processor.CurrentPacketId, processor.CurrentPacketData);
+                    }
 
-                    return packets;
+                    yield break;
                 }
             }
         }
@@ -134,7 +133,7 @@ namespace StarLib.Packets
         /// <param name="packetId">The id of the packet</param>
         /// <param name="data">The data that will be fed into the packet to be read</param>
         /// <returns>The decoded packet</returns>
-        private Packet Decode(byte packetId, byte[] data)
+        protected virtual Packet Decode(byte packetId, byte[] data)
         {
             Packet packet;
 

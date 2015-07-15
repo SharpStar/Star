@@ -26,37 +26,44 @@ using StarLib.Logging;
 
 namespace SharpStar.ConsoleCommands
 {
-	public sealed class HelpCommand : ConsoleCommand
-	{
-		private readonly StarLog _logger = StarLog.DefaultLogger;
+    public sealed class HelpCommand : ConsoleCommand
+    {
+        private readonly StarLog _logger = StarLog.DefaultLogger;
 
-		public HelpCommand() : base(StarMain.Instance.CurrentLocalization["HelpConsoleCommandName"] ?? "starhelp")
-		{
-			Parts[string.Empty] = p =>
-			{
-				_logger.Info(GetHelp(null));
-			};
+        public HelpCommand() : base(StarMain.Instance.CurrentLocalization["HelpConsoleCommandName"] ?? "starhelp")
+        {
+            Parts[string.Empty] = p =>
+            {
+                _logger.Info(GetHelp(null));
+            };
 
-			Parts["{0}"] = p =>
-			{
-				ConsoleCommand cmd = StarMain.Instance.ConsoleCommandManager.SingleOrDefault(x => x.CommandName.Equals(p.Arguments[0], StringComparison.OrdinalIgnoreCase));
+            Parts["{0}"] = p =>
+            {
+                CommandInfo cmd = StarMain.Instance.ConsoleCommandManager.SingleOrDefault(x => x.Name.Equals(p.Arguments[0], StringComparison.CurrentCultureIgnoreCase));
 
-				if (cmd != null)
-					_logger.Info(cmd.GetHelp(p.Arguments.Skip(1).ToArray()));
-				else
-					_logger.Info(StarMain.Instance.CurrentLocalization["HelpConsoleCommandNotFound"]);
-			};
+                if (cmd == null)
+                {
+                    _logger.Info(StarMain.Instance.CurrentLocalization["HelpConsoleCommandNotFound"]);
 
-		}
+                    return;
+                }
+                
+                ConsoleCommand cCmd = (ConsoleCommand)Activator.CreateInstance(cmd.Type);
 
-		public override string Description
-		{
-			get { return StarMain.Instance.CurrentLocalization["HelpConsoleCommandDesc"]; }
-		}
+                _logger.Info(cCmd.GetHelp(p.Arguments.Skip(1).ToArray()));
 
-		public override string GetHelp(string[] arguments)
-		{
-			return StarMain.Instance.CurrentLocalization["HelpConsoleCommandHelp"];
-		}
-	}
+            };
+
+        }
+
+        public override string Description
+        {
+            get { return StarMain.Instance.CurrentLocalization["HelpConsoleCommandDesc"]; }
+        }
+
+        public override string GetHelp(string[] arguments)
+        {
+            return StarMain.Instance.CurrentLocalization["HelpConsoleCommandHelp"];
+        }
+    }
 }

@@ -21,58 +21,58 @@ using System.Threading.Tasks;
 
 namespace StarLib.Commands
 {
-	public abstract class CommandParts : CommandParts<ParsedCommand>
-	{
-		protected CommandParts() : base(string.Empty)
-		{
-		}
+    public class CommandParts : CommandParts<ParsedCommand>
+    {
+        public CommandParts() : base(string.Empty)
+        {
+        }
 
-		protected CommandParts(string commandName) : base(commandName)
-		{
-		}
-	}
+        public CommandParts(string commandName) : base(commandName)
+        {
+        }
+    }
 
-	public abstract class CommandParts<T> : IEnumerable<CommandExecutorPart<T>> where T : ParsedCommand
-	{
+    public class CommandParts<T> : IEnumerable<CommandExecutorPart<T>> where T : ParsedCommand
+    {
 
-		public string CommandName { get; set; }
+        public string CommandName { get; set; }
 
-		protected readonly Dictionary<string, CommandExecutorPart<T>> Parts;
+        protected readonly Dictionary<string, CommandExecutorPart<T>> Parts;
 
-		protected CommandParts()
-			: this(string.Empty)
-		{
-		}
+        public CommandParts()
+            : this(string.Empty)
+        {
+        }
 
-		protected CommandParts(string commandName)
-		{
-			Parts = new Dictionary<string, CommandExecutorPart<T>>();
-			CommandName = commandName;
-		}
+        public CommandParts(string commandName)
+        {
+            Parts = new Dictionary<string, CommandExecutorPart<T>>();
+            CommandName = commandName;
+        }
 
-		public Action<T> this[string exp]
-		{
-			get
-			{
-				return Parts[exp].Executor;
-			}
-			set
-			{
-				if (value == null)
-					Parts[exp] = null;
-				else
-					Parts[exp] = new CommandExecutorPart<T>(new CommandPart(CommandName, exp), value);
-			}
-		}
+        public Action<T> this[string exp]
+        {
+            get
+            {
+                return Parts[exp].Executor;
+            }
+            set
+            {
+                if (value == null)
+                    Parts[exp] = null;
+                else
+                    Parts[exp] = new CommandExecutorPart<T>(new CommandPart(CommandName, exp), value);
+            }
+        }
 
-		public IEnumerator<CommandExecutorPart<T>> GetEnumerator()
-		{
-			return Parts.Values.GetEnumerator();
-		}
+        public IEnumerator<CommandExecutorPart<T>> GetEnumerator()
+        {
+            return Parts.Values.GetEnumerator();
+        }
 
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
-	}
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
 }

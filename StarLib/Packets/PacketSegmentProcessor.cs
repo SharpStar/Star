@@ -40,6 +40,7 @@ namespace StarLib.Packets
         public byte[] CurrentPacketData { get; private set; }
 
         private long? _length;
+        
         private int _position;
 
         /// <summary>
@@ -48,7 +49,7 @@ namespace StarLib.Packets
         public PacketSegmentProcessor()
         {
             PacketBuffer = new List<byte>();
-
+            _position = 0;
             _length = null;
         }
 
@@ -58,10 +59,12 @@ namespace StarLib.Packets
         /// <param name="nextSegment">The next segment to be processed</param>
         /// <param name="offset">The offset to start at</param>
         /// <param name="len">The length of the segment to process</param>
+        /// <param name="completed">Set to true if the segment processed was a complete packet, otherwise false</param>
         /// <returns>True if more needs to be processed, false if complete</returns>
-        public bool ProcessNextSegment(byte[] nextSegment, int offset, int len)
+        public bool ProcessNextSegment(byte[] nextSegment, int offset, int len, out bool completed)
         {
             CurrentPacketData = null;
+            completed = false;
 
             if (nextSegment.Length > 0)
             {
@@ -122,6 +125,8 @@ namespace StarLib.Packets
 
             //reset length
             _length = null;
+
+            completed = true;
 
             //return true if there are any more packets needing to be processed
             return PacketBuffer.Count > 0;

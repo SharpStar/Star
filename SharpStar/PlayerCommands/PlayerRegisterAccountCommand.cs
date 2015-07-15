@@ -31,7 +31,7 @@ namespace SharpStar.PlayerCommands
         {
             Parts[string.Empty] = async p =>
             {
-                await p.Player.Proxy.SendChatMessageAsync(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                await Context.Player.Proxy.SendChatMessageAsync(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                     GetHelp(null));
             };
 
@@ -43,7 +43,7 @@ namespace SharpStar.PlayerCommands
 
                 if (password != confirmPwd)
                 {
-                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    Context.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         StarMain.Instance.CurrentLocalization["PlayerRegisterAccountCommandPasswordError"]);
 
                     return;
@@ -51,12 +51,12 @@ namespace SharpStar.PlayerCommands
 
                 if (StarMain.Instance.Database.CreateAccount(username, password))
                 {
-                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    Context.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         StarMain.Instance.CurrentLocalization["PlayerRegisterAccountCreatedMessage"]);
                 }
                 else
                 {
-                    p.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
+                    Context.Player.Proxy.SendChatMessage(StarMain.Instance.CurrentLocalization["PlayerCommandChatName"],
                         StarMain.Instance.CurrentLocalization["PlayerRegisterAccountExistsError"]);
                 }
 
